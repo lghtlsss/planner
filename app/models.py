@@ -22,7 +22,12 @@ class User(Base):
         nullable=False
     )
 
-    events:Mapped[list["Event"]] = relationship(back_populates="user")
+    email: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        unique=True
+    )
+    events: Mapped[list["Event"]] = relationship(back_populates="user")
 
 
 class Event(Base):
