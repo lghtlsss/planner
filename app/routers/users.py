@@ -18,7 +18,11 @@ def get_users(db: Session = Depends(get_db)):
 
 @router.get("{user_id}")
 def get_single_user(user_id: int, db: Session = Depends(get_db)):
-    return db.get(User, user_id)
+    db_user = db.get(User, user_id)
+    if db_user is None:
+        return HTTPException(404, "User not fund")
+
+    return db_user
 
 
 @router.post("", response_model=SUserResponse)
