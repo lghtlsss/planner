@@ -8,7 +8,7 @@ from app.models import User
 
 from app.schemas import SUserCreate, SUserUpdate, SUserResponse
 
-from app.security import hash_password, verify_password
+from app.security import hash_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
