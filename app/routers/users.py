@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from app.models import User
 
-from app.schemas import SUserCreate, SUserUpdate, SUserResponse
+from app.schemas.s_users import SUserCreate, SUserUpdate, SUserResponse
 
 from app.security import hash_password
 
