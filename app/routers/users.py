@@ -16,7 +16,7 @@ def get_users(db: Session = Depends(get_db)):
     return db.execute(select(User)).scalars().all()
 
 
-@router.get("{user_id}")
+@router.get("{user_id}", response_model=SUserResponse)
 def get_single_user(user_id: int, db: Session = Depends(get_db)):
     db_user = db.get(User, user_id)
     if db_user is None:
@@ -32,6 +32,23 @@ def create_user(user: SUserCreate, db: Session = Depends(get_db)):
                    hashed_password=user.password)
 
     db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    return db_user
+
+
+@router.patch("{user_id}", response_model=SUserResponse)
+def update_user(user_id: int, data: SUserUpdate, db: Session = Depends(get_db)):
+    db_user = db.get(User, user_id)
+    if db_user is None:
+        return HTTPException(404, "User not fund")
+
+    to_update = data.model_dump(exclude_none=True)
+
+    for key, value in to_update.items():
+        setattr(db_user, key, value)
+
     db.commit()
     db.refresh(db_user)
 
