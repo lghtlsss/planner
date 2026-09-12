@@ -9,6 +9,17 @@ from app.security import verify_password
 
 router = APIRouter(prefix="auth", tags=["Auth"])
 
-@router.get("/login")
-def login():
+
+@router.get("/sign_up")
+def sign_up():
+    pass
+
+
+@router.get("/sign_in")
+def sign_in():
+    pass
+
+
+@router.get("/sign_out")
+def sign_out():
     pass
