@@ -1,14 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from app.config import settings
 
 
 class Base(DeclarativeBase):
     pass
 
 
-DB_URL =  (
-    "postgresql+psycopg://postgres:17563@localhost:5432/planner_db"
-)
+DB_URL = settings.database_url
 
 engine = create_engine(DB_URL)
 

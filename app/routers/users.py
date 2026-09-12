@@ -6,9 +6,8 @@ from sqlalchemy import select
 
 from app.models import User
 
-from app.schemas.s_users import SUserCreate, SUserUpdate, SUserResponse
+from app.schemas.s_users import SUserUpdate, SUserResponse
 
-from app.security import hash_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -23,19 +22,6 @@ def get_single_user(user_id: int, db: Session = Depends(get_db)):
     db_user = db.get(User, user_id)
     if db_user is None:
         return HTTPException(404, "User not fund")
-
-    return db_user
-
-
-@router.post("", response_model=SUserResponse)
-def create_user(user: SUserCreate, db: Session = Depends(get_db)):
-    db_user = User(name=user.name,
-                   surname=user.surname,
-                   hashed_password=hash_password(user.password))
-
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
 
     return db_user
 
@@ -67,6 +53,3 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "successfully deleted"}
-
-
-# TODO: сделать авторизацию, аутентификацию
