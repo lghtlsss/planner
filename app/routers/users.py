@@ -8,6 +8,8 @@ from app.models import User
 
 from app.schemas import SUserCreate, SUserUpdate, SUserResponse
 
+from app.security import hash_password, verify_password
+
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
@@ -29,7 +31,7 @@ def get_single_user(user_id: int, db: Session = Depends(get_db)):
 def create_user(user: SUserCreate, db: Session = Depends(get_db)):
     db_user = User(name=user.name,
                    surname=user.surname,
-                   hashed_password=user.password)
+                   hashed_password=hash_password(user.password))
 
     db.add(db_user)
     db.commit()
@@ -65,3 +67,6 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "successfully deleted"}
+
+
+# TODO: сделать авторизацию, аутентификацию
