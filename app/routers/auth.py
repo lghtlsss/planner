@@ -21,7 +21,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 def create_access_token(user_id: int) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.settings.jwt_access_token_expire_minutes)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
 
     payload = {
         "sub": str(user_id),
@@ -44,6 +44,7 @@ def register(new_user: SUserCreate, db: Session = Depends(get_db)):
 
     db_user = User(name=new_user.name,
                    surname=new_user.surname,
+                   email=new_user.email,
                    hashed_password=hash_password(new_user.password))
 
     db.add(db_user)
@@ -60,7 +61,7 @@ def login(login_data: SLogin, db: Session = Depends(get_db)):
     if db_user is None:
         raise HTTPException(401, "Invalid email or password")
 
-    if not verify_password(login_data.password, db_user.hased_password):
+    if not verify_password(login_data.password, db_user.hashed_password):
         raise HTTPException(401, "Invalid email or password")
 
     access_token = create_access_token(db_user.id)
