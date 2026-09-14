@@ -1,55 +1,43 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.database import get_db
 from sqlalchemy.orm import Session
-from sqlalchemy import select
-
-from app.models import User
 
 from app.schemas.s_users import SUserUpdate, SUserResponse
-
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.get("")
-def get_users(db: Session = Depends(get_db)):
-    return db.execute(select(User)).scalars().all()
+# Это будет иметь смысл только если делать admin-панель
+# @router.get("")
+# def get_users(db: Session = Depends(get_db)):
+#     return db.execute(select(User)).scalars().all()
 
 
-@router.get("{user_id}", response_model=SUserResponse)
-def get_single_user(user_id: int, db: Session = Depends(get_db)):
-    db_user = db.get(User, user_id)
-    if db_user is None:
-        return HTTPException(404, "User not fund")
-
-    return db_user
+@router.get("/me", response_model=SUserResponse)
+def get_single_user(
+    current_user=Depends(get_current_user)
+):
+    return current_user
 
 
-@router.patch("{user_id}", response_model=SUserResponse)
-def update_user(user_id: int, data: SUserUpdate, db: Session = Depends(get_db)):
-    db_user = db.get(User, user_id)
-    if db_user is None:
-        return HTTPException(404, "User not fund")
-
+@router.patch("/me", response_model=SUserResponse)
+def update_user(data: SUserUpdate, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     to_update = data.model_dump(exclude_none=True)
 
     for key, value in to_update.items():
-        setattr(db_user, key, value)
+        setattr(current_user, key, value)
 
     db.commit()
-    db.refresh(db_user)
+    db.refresh(current_user)
 
-    return db_user
+    return current_user
 
 
-@router.delete("{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
-    db_user = db.get(User, user_id)
-    if db_user is None:
-        return HTTPException(404, "User not found")
-
-    db.delete(db_user)
+@router.delete("/me")
+def delete_user(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    db.delete(current_user)
     db.commit()
 
-    return {"message": "successfully deleted"}
+    return {"message": "account successfully deleted"}

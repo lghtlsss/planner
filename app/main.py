@@ -10,7 +10,7 @@ app = FastAPI()
 app.include_router(users_roter)
 app.include_router(auth_router)
 
+
 @app.get("/about_us")
 def about_us():
     return {"message": "About us"}
-

@@ -6,11 +6,10 @@ from jose import JWTError, jwt
 from app.config import settings
 
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 from app.models import User
 
-from app.database import Base, get_db
+from app.database import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
