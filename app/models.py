@@ -51,6 +51,9 @@ class Event(Base):
         String(10),
         nullable=False)  # Пока что просто dd.mm.yyyy или dd.mm.yy, позже можно поменять на datetime
 
+# class Day(Base):
+    # нужно ещё сделать загруженность дня, по дефолту=0, но по мере добавления задач апдейтить это значение
+
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
     user: Mapped["User"] = relationship(back_populates="events")
