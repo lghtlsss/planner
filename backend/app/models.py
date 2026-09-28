@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.database import Base
@@ -41,19 +41,21 @@ class Event(Base):
         String(50),
         nullable=False
     )
-    description: Mapped[str] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         String(200),
         nullable=True
     )
-    potential_duration: Mapped[int] = mapped_column(
+    potential_duration: Mapped[int | None] = mapped_column(
         nullable=True)  # Пока что просто инт в минутах, позже можно поменять на datetime
-    date: Mapped[str] = mapped_column(
-        String(10),
-        nullable=False)  # Пока что просто dd.mm.yyyy или dd.mm.yy, позже можно поменять на datetime
 
-# class Day(Base):
-    # нужно ещё сделать загруженность дня, по дефолту=0, но по мере добавления задач апдейтить это значение
+    date: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False)  # Пока что просто dd.mm.yyyy или dd.mm.yy, позже можно поменять на datetime
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
     user: Mapped["User"] = relationship(back_populates="events")
+
+
+# class Day(Base):
+    # нужно ещё сделать загруженность дня, по дефолту=0, но по мере добавления задач апдейтить это значение

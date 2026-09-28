@@ -19,7 +19,6 @@ from jose import jwt
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-
 def create_access_token(user_id: int) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
 
@@ -70,13 +69,3 @@ def login(login_data: SLogin, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer"
     }
-
-
-@router.get("/logout")
-def logout():
-    pass
-
-
-def get_current_user(
-        token: str = Depends()):
-    pass
