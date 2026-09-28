@@ -4,32 +4,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.database import Base
 
 
-class User(Base):
-    __tablename__ = "users"
-
-    id: Mapped[int] = mapped_column(
-        primary_key=True,
-        autoincrement=True)
-
-    hashed_password: Mapped[str] = mapped_column(nullable=False)
-
-    name: Mapped[str] = mapped_column(
-        String(30),
-        nullable=False
-    )
-    surname: Mapped[str] = mapped_column(
-        String(30),
-        nullable=False
-    )
-
-    email: Mapped[str] = mapped_column(
-        String(100),
-        nullable=False,
-        unique=True
-    )
-    events: Mapped[list["Event"]] = relationship(back_populates="user")
-
-
 class Event(Base):
     __tablename__ = "events"
 
@@ -56,6 +30,5 @@ class Event(Base):
 
     user: Mapped["User"] = relationship(back_populates="events")
 
-
 # class Day(Base):
-    # нужно ещё сделать загруженность дня, по дефолту=0, но по мере добавления задач апдейтить это значение
+# нужно ещё сделать загруженность дня, по дефолту=0, но по мере добавления задач апдейтить это значение

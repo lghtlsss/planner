@@ -8,3 +8,4 @@ psycopg2
 openpyxl>=3.1
 requests>=2.31
 pytest>=7.0
+python-dotenv
