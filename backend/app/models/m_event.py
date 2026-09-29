@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import String, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,7 +26,9 @@ class Event(Base):
 
     date: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
-        nullable=False)  # Пока что просто dd.mm.yyyy или dd.mm.yy, позже можно поменять на datetime
+        nullable=False)
+
+    creation_time: Mapped[datetime] = mapped_column(default=datetime.now())
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 

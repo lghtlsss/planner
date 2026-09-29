@@ -17,9 +17,9 @@ class User(Base):
         String(30),
         nullable=False
     )
-    surname: Mapped[str] = mapped_column(
+    surname: Mapped[str | None] = mapped_column(
         String(30),
-        nullable=False
+        nullable=True
     )
 
     email: Mapped[str] = mapped_column(
