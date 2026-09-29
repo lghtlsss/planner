@@ -33,3 +33,7 @@ class SEventResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+
+class SListEventResponse(BaseModel):
+    events: list[SEventResponse]
