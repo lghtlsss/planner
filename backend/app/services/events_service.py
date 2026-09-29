@@ -1,9 +1,8 @@
 from fastapi import HTTPException, status
-from app.models import User
+from app.models import User, Event
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.models import Event
-from app.schemas import SEventCreate
+from app.schemas import SEventCreate, SEventUpdate
 
 
 def create_event_service(data: SEventCreate, user: User, db: Session):
@@ -54,26 +53,9 @@ def create_event_service(data: SEventCreate, user: User, db: Session):
     return {"event": new_event, "intersection": intersection_flag}
 
 
-def delete_event_service(event_id: int, user: User, db: Session):
-    """
-    Удаление события по id.
-    Проводится проверка на существование события и на право удаления этого события пользователем
-    """
-    event_to_del = db.get(Event, event_id)
-
-    if event_to_del is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-
-    if event_to_del.user_id != user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to delete this event")
-
-    db.delete(event_to_del)
-    db.commit()
-
-    return {"message": "ok"}
-
-
-def get_single_event_service(event_id: int, user: User, db: Session):
+def get_event_for_user(event_id, user: User, db: Session) -> Event:
+    """Находит событие и проверяет, может ли текущий пользователь с ним взаимодействовать.
+     Если да то возвращает это событие"""
     event = db.get(Event, event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -82,3 +64,36 @@ def get_single_event_service(event_id: int, user: User, db: Session):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to see this event")
 
     return event
+
+
+def delete_event_service(event_id: int, user: User, db: Session):
+    """
+    Удаление события по id.
+    Проводится проверка на существование события и на право удаления этого события пользователем
+    """
+    event_to_del = get_event_for_user(event_id, user, db)
+
+    db.delete(event_to_del)
+    db.commit()
+
+    return {"message": "ok"}
+
+
+def get_single_event_service(event_id: int, user: User, db: Session) -> Event:
+    """Возвращает событие по id"""
+    return get_event_for_user(event_id, user, db)
+
+
+def update_event_service(event_id: int, user: User, data: SEventUpdate, db: Session) -> Event:
+    """Patch данных о событии"""
+    curr_event = get_event_for_user(event_id, user, db)
+
+    fields_to_update = data.model_dump(exclude_unset=True)
+
+    for key, value in fields_to_update.items():
+        setattr(curr_event, key, value)
+
+    db.commit()
+    db.refresh(curr_event)
+
+    return curr_event
