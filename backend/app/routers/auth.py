@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend.app.config import settings
-from backend.app.database import get_db
+from app.config import settings
+from app.database import get_db
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from backend.app.models import User
+from app.models import User
 
-from backend.app.schemas.s_users import SUserCreate, SUserResponse
-from backend.app.schemas.s_auth import SToken, SLogin
+from app.schemas.s_users import SUserCreate, SUserResponse
+from app.schemas.s_auth import SToken, SLogin
 
-from backend.app.security import hash_password, verify_password
+from app.security import hash_password, verify_password
 
 from datetime import datetime, timedelta, timezone
 
