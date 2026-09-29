@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import String, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -22,15 +22,19 @@ class Event(Base):
         nullable=True
     )
     potential_duration: Mapped[int | None] = mapped_column(
-        nullable=True)  # Пока что просто инт в минутах, позже можно поменять на datetime
+        nullable=False)
+    actual_duration: Mapped[int | None] = mapped_column(nullable=True)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    potential_end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    date: Mapped[DateTime] = mapped_column(
+    date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False)
 
-    creation_time: Mapped[datetime] = mapped_column(default=datetime.now())
+    creation_time: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                    default=lambda: datetime.now(timezone.utc),
+                                                    nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
     user: Mapped["User"] = relationship(back_populates="events")
-
