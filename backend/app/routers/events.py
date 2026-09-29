@@ -1,4 +1,3 @@
-from Scripts.rst2odt import description
 from fastapi import APIRouter, Depends
 from app.dependencies import get_current_user
 from app.models import User
@@ -6,7 +5,9 @@ from app.database import get_db
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.models import Event
-from app.schemas import SEventCreate, SEventResponse, SEventUpdate, SListEventResponse
+from app.schemas import SEventCreate, SEventResponse, SEventUpdate, SListEventResponse, SEventCreateResponse
+
+from app.services import create_event_service, delete_event_service
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -16,21 +17,12 @@ def get_events(current_user: User = Depends(get_current_user), db: Session = Dep
     return db.execute(select(Event).where(Event.user_id == current_user.id))
 
 
-@router.post("", response_model=SEventResponse)
-def create_event(data: SEventCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Нужно добавить проверку: не занято ли уже дата и время куда суётся event
-    new_event = Event(
-        name=data.name,
-        description=data.description,
-        potential_duration=data.potential_duration,
-        start_time=data.start_time,
-        potential_end_time=data.potential_end_time,
-        date=data.date,
-        user_id=current_user.id
-    )
+@router.post("", response_model=SEventCreateResponse)
+def create_event(data: SEventCreate, current_user: User = Depends(get_current_user),
+                 db: Session = Depends(get_db)):
+    return create_event_service(data, current_user, db)
 
-    db.add(new_event)
-    db.commit()
-    db.refresh(new_event)
 
-    return new_event
+@router.delete("/delete/{event_id}")
+def delete_event(event_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db())):
+    return delete_event_service(event_id, current_user, db)
