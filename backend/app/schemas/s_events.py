@@ -22,6 +22,7 @@ class SEventUpdate(BaseModel):
 
 
 class SEventResponse(BaseModel):
+    id: int
     name: str
     description: str | None
     potential_duration: int

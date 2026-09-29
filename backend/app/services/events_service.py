@@ -71,3 +71,14 @@ def delete_event_service(event_id: int, user: User, db: Session):
     db.commit()
 
     return {"message": "ok"}
+
+
+def get_single_event_service(event_id: int, user: User, db: Session):
+    event = db.get(Event, event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    if event.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to see this event")
+
+    return event
