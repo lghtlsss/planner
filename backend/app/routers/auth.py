@@ -16,6 +16,8 @@ from datetime import datetime, timedelta, timezone
 
 from jose import jwt
 
+from fastapi.security import OAuth2PasswordRequestForm
+
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
@@ -54,13 +56,13 @@ def register(new_user: SUserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=SToken)
-def login(login_data: SLogin, db: Session = Depends(get_db)):
-    db_user = db.execute(select(User).where(User.email == login_data.email)).scalar_one_or_none()
+def login(credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    db_user = db.execute(select(User).where(User.email == credentials.username)).scalar_one_or_none()
 
     if db_user is None:
         raise HTTPException(401, "Invalid email or password")
 
-    if not verify_password(login_data.password, db_user.hashed_password):
+    if not verify_password(credentials.password, db_user.hashed_password):
         raise HTTPException(401, "Invalid email or password")
 
     access_token = create_access_token(db_user.id)

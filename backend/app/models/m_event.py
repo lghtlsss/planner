@@ -30,5 +30,3 @@ class Event(Base):
 
     user: Mapped["User"] = relationship(back_populates="events")
 
-# class Day(Base):
-# нужно ещё сделать загруженность дня, по дефолту=0, но по мере добавления задач апдейтить это значение
