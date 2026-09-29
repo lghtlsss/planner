@@ -28,7 +28,8 @@ class SEventResponse(BaseModel):
     date: datetime
     start_time: datetime
     potential_end_time: datetime
-    actual_duration: int | None
+    actual_duration: int | None = None
+    message: str | None = None
 
     model_config = {
         "from_attributes": True
@@ -37,3 +38,8 @@ class SEventResponse(BaseModel):
 
 class SListEventResponse(BaseModel):
     events: list[SEventResponse]
+
+
+class SEventCreateResponse(BaseModel):
+    event: SEventResponse
+    intersection: bool
