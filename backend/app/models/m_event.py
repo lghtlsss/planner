@@ -23,8 +23,10 @@ class Event(Base):
     )
     potential_duration: Mapped[int | None] = mapped_column(
         nullable=False)
-    actual_duration: Mapped[int | None] = mapped_column(nullable=True)
+    actual_duration: Mapped[int | None] = mapped_column(nullable=True, default=None)
+
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
     potential_end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     date: Mapped[datetime] = mapped_column(
