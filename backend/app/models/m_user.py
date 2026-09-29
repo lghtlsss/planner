@@ -27,4 +27,4 @@ class User(Base):
         nullable=False,
         unique=True
     )
-    events: Mapped[list["Event"]] = relationship(back_populates="user")
+    events: Mapped[list["Event"]] = relationship(back_populates="user", cascade="all, delete-orphan")
