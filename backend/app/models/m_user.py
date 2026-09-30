@@ -1,6 +1,6 @@
-from sqlalchemy import String
+from sqlalchemy import String, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
+from datetime import time
 from app.database import Base
 
 
@@ -27,6 +27,13 @@ class User(Base):
         nullable=False,
         unique=True
     )
+
+    sleep_time_hours: Mapped[int | None] = mapped_column(
+        nullable=True
+    )
+
+    go_to_sleep_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    wake_up_time: Mapped[time | None] = mapped_column(Time, nullable=True)
 
     events: Mapped[list["Event"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     tasks: Mapped[list["Task"]] = relationship(back_populates="user", cascade="all, delete-orphan")
