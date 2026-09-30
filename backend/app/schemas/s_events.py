@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import datetime, time, date
+from datetime import time, date
 
 
 class SEventCreate(BaseModel):
