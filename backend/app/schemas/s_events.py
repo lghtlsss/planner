@@ -21,7 +21,7 @@ class SEventUpdate(BaseModel):
 class SEventResponse(BaseModel):
     id: int
     name: str
-    description: str | None
+    description: str | None = None
     start_time: time
     end_time: time
     event_date: date
