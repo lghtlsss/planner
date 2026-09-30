@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey, DateTime
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -27,4 +27,6 @@ class User(Base):
         nullable=False,
         unique=True
     )
+
     events: Mapped[list["Event"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    tasks: Mapped[list["Task"]] = relationship(back_populates="user", cascade="all, delete-orphan")
