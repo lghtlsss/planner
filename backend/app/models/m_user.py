@@ -37,3 +37,4 @@ class User(Base):
 
     events: Mapped[list["Event"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     tasks: Mapped[list["Task"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    deadlines: Mapped[list["Deadline"]] = relationship(back_populates="user", cascade="all, delete-orphan")
