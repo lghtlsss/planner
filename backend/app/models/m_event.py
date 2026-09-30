@@ -24,7 +24,7 @@ class Event(Base):
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     end_time: Mapped[time] = mapped_column(Time, nullable=True)
 
-    date: Mapped[date] = mapped_column(
+    event_date: Mapped[date] = mapped_column(
         Date,
         nullable=False)
 

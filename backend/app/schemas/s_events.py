@@ -1,35 +1,30 @@
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, time, date
 
 
 class SEventCreate(BaseModel):
     name: str
-    description: str | None
-    potential_duration: int
-    date: datetime
-    start_time: datetime
-    potential_end_time: datetime
+    description: str | None = None
+    start_time: time
+    end_time: time
+    event_date: date
 
 
 class SEventUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
-    potential_duration: int | None = None
-    date: datetime | None = None
-    start_time: datetime | None = None
-    potential_end_time: datetime | None = None
-    actual_duration: int | None = None
+    start_time: time | None = None
+    end_time: time | None = None
+    date: date | None = None
 
 
 class SEventResponse(BaseModel):
     id: int
     name: str
     description: str | None
-    potential_duration: int
-    date: datetime
-    start_time: datetime
-    potential_end_time: datetime
-    actual_duration: int | None = None
+    start_time: time
+    end_time: time
+    date: date
     message: str | None = None
 
     model_config = {

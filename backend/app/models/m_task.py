@@ -17,16 +17,16 @@ class Task(Base):
         nullable=True
     )
     potential_duration: Mapped[int | None] = mapped_column(
-        nullable=False)  # в минутах
+        nullable=True)  # в минутах
     actual_duration: Mapped[int | None] = mapped_column(nullable=True, default=None)  # в минутах
 
-    start_time: Mapped[time] = mapped_column(Time, nullable=False)
+    start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
 
-    potential_end_time: Mapped[time] = mapped_column(Time, nullable=False)
+    potential_end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
 
-    date: Mapped[date] = mapped_column(
+    task_date: Mapped[date | None] = mapped_column(
         Date,
-        nullable=False)
+        nullable=True)
 
     deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                nullable=False)
