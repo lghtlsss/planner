@@ -12,7 +12,7 @@ def create_event_service(data: SEventCreate, user: User, db: Session):
         и не пересечётся ли новое событие с уже запланированными.
     """
     do_event_exists = db.execute(select(Event).where(
-        Event.date == data.date,
+        Event.event_date == data.event_date,
         Event.start_time == data.start_time,
         Event.user_id == user.id
     )).scalar_one_or_none()
@@ -24,9 +24,9 @@ def create_event_service(data: SEventCreate, user: User, db: Session):
 
     events_intersection = db.execute(select(Event).where(
         Event.user_id == user.id,
-        Event.date == data.date,
-        Event.start_time < data.potential_end_time,
-        Event.potential_end_time > data.start_time
+        Event.event_date == data.event_date,
+        Event.start_time < data.end_time,
+        Event.end_time > data.start_time
     )).scalar_one_or_none()
     intersection_flag = False
     if events_intersection is not None:
@@ -35,10 +35,9 @@ def create_event_service(data: SEventCreate, user: User, db: Session):
     new_event = Event(
         name=data.name,
         description=data.description,
-        potential_duration=data.potential_duration,
         start_time=data.start_time,
-        potential_end_time=data.potential_end_time,
-        date=data.date,
+        end_time=data.end_time,
+        event_date=data.event_date,
         user_id=user.id
     )
 

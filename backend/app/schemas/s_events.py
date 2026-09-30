@@ -15,7 +15,7 @@ class SEventUpdate(BaseModel):
     description: str | None = None
     start_time: time | None = None
     end_time: time | None = None
-    date: date | None = None
+    event_date: date | None = None
 
 
 class SEventResponse(BaseModel):
@@ -24,8 +24,7 @@ class SEventResponse(BaseModel):
     description: str | None
     start_time: time
     end_time: time
-    date: date
-    message: str | None = None
+    event_date: date
 
     model_config = {
         "from_attributes": True
