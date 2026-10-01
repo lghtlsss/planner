@@ -1,7 +1,7 @@
 from app.models import Deadline, User
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.schemas import SDeadlineCreate, SDeadlineResponse, SDeadlineListResponse, SDeadlineUpdate
+from app.schemas import SDeadlineCreate, SDeadlineUpdate
 from fastapi import HTTPException, status
 from datetime import date
 
@@ -18,7 +18,7 @@ def get_deadline_for_user(user: User, dd_id, db: Session):
     return db_dd
 
 
-def get_all_deadlines_by_id(user: User, db: Session):
+def get_all_deadlines_for_user(user: User, db: Session):
     """
     Возвращает все дедлайны которые есть у пользователя
     """
@@ -41,5 +41,43 @@ def get_all_deadlines_by_expire_date(dd_date: date, db: Session, user: User):
     return {"deadlines": db_dd}
 
 
+def delete_deadline_by_id(dd_id: int, db: Session, user: User):
+    db_dd = get_deadline_for_user(user, dd_id, db)
+
+    db.delete(db_dd)
+    db.commit()
+
+    return {"message": "success"}
 
 
+def update_deadline_by_id(data: SDeadlineUpdate, dd_id: int, db: Session, user: User):
+    db_dd = get_deadline_for_user(user, dd_id, db)
+
+    to_update = data.model_dump()
+
+    for key, value in to_update.items():
+        setattr(db_dd, key, value)
+
+    db.commit()
+    db.refresh(db_dd)
+
+    return db_dd
+
+
+def create_deadline(data: SDeadlineCreate, user, db: Session):
+    new_dd = Deadline(
+        title=data.title,
+        description=data.description,
+        expire_date=data.expire_date,
+        repeat=data.repeat,
+        difficulty=data.difficulty,
+        tag=data.tag,
+        send_notification=data.send_notification,
+        user_id=user.id
+    )
+
+    db.add(new_dd)
+    db.commit()
+    db.refresh(new_dd)
+
+    return new_dd

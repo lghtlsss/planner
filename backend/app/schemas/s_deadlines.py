@@ -14,6 +14,7 @@ class SDeadlineCreate(BaseModel):
 
 
 class SDeadlineResponse(BaseModel):
+    id: int
     title: str
     description: str | None
     expire_date: date | None
