@@ -7,6 +7,9 @@ from datetime import date
 
 
 def get_deadline_for_user(user: User, dd_id, db: Session):
+    """
+    Получает дедлайн по id со всеми проверками
+    """
     db_dd = db.get(Deadline, dd_id)
 
     if db_dd is None:
@@ -42,6 +45,9 @@ def get_all_deadlines_by_expire_date(dd_date: date, db: Session, user: User):
 
 
 def delete_deadline_by_id(dd_id: int, db: Session, user: User):
+    """
+    Удаляет дедлайн по id
+    """
     db_dd = get_deadline_for_user(user, dd_id, db)
 
     db.delete(db_dd)
@@ -51,6 +57,9 @@ def delete_deadline_by_id(dd_id: int, db: Session, user: User):
 
 
 def update_deadline_by_id(data: SDeadlineUpdate, dd_id: int, db: Session, user: User):
+    """
+    Апдейт данных дедлайна
+    """
     db_dd = get_deadline_for_user(user, dd_id, db)
 
     to_update = data.model_dump()
@@ -65,6 +74,9 @@ def update_deadline_by_id(data: SDeadlineUpdate, dd_id: int, db: Session, user: 
 
 
 def create_deadline(data: SDeadlineCreate, user, db: Session):
+    """
+    Создание нового дедлайна
+    """
     new_dd = Deadline(
         title=data.title,
         description=data.description,

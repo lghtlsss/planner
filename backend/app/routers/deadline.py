@@ -12,16 +12,25 @@ router = APIRouter(prefix="/deadlines", tags=["Deadlines"])
 
 @router.get("/get/{dd_id}", response_model=SDeadlineResponse)
 def get_dd_by_id(dd_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Получение пользователя по id
+    """
     return get_deadline_for_user(current_user, dd_id, db)
 
 
 @router.get("", response_model=SDeadlineListResponse)
 def get_all_deadlines(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Получение всех дедлайнов
+    """
     return get_all_deadlines_for_user(current_user, db)
 
 
 @router.get("/bydate", response_model=SDeadlineListResponse)
 def get_dd_by_date(dd_date: date, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Получение дедлайна за какую-то дату
+    """
     return get_all_deadlines_by_expire_date(dd_date, db, current_user)
 
 
@@ -31,6 +40,9 @@ def delete_dd(
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Удаление пользователя
+    """
     return delete_deadline_by_id(dd_id, db, current_user)
 
 
@@ -41,6 +53,9 @@ def update_dd(
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Обновление данных пользователя
+    """
     return update_deadline_by_id(data, dd_id, db, current_user)
 
 
@@ -50,4 +65,7 @@ def create_dd(
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Создание пользователя
+    """
     return create_deadline(data, current_user, db)
