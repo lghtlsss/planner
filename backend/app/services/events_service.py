@@ -75,7 +75,7 @@ def delete_event_service(event_id: int, user: User, db: Session):
     db.delete(event_to_del)
     db.commit()
 
-    return {"message": "ok"}
+    return {"message": "success"}
 
 
 def get_single_event_service(event_id: int, user: User, db: Session) -> Event:
