@@ -22,7 +22,7 @@ def get_single_event(event_id: int, current_user: User = Depends(get_current_use
     return get_single_event_service(event_id, current_user, db)
 
 
-@router.post("", response_model=SEventCreateResponse)
+@router.post("/new", response_model=SEventCreateResponse)
 def create_event(data: SEventCreate, current_user: User = Depends(get_current_user),
                  db: Session = Depends(get_db)):
     return create_event_service(data, current_user, db)
