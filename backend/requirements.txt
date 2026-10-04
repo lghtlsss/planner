@@ -4,8 +4,9 @@ pydantic~=2.13.5
 pwdlib[argon2]~=0.3.1
 pydantic-settings
 python-jose
-psycopg2
+psycopg2-binary
 openpyxl>=3.1
 requests>=2.31
 pytest>=7.0
 python-dotenv
+alembic
