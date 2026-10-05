@@ -10,6 +10,7 @@ class SDeadlineCreate(BaseModel):
     repeat: bool = False
     difficulty: Difficulty | None = None
     tag: str | None = None
+    comment: str | None = None
     send_notification: bool = False
 
 
@@ -21,6 +22,7 @@ class SDeadlineResponse(BaseModel):
     repeat: bool
     difficulty: Difficulty | None
     tag: str | None
+    comment: str | None
     send_notification: bool
 
 
@@ -35,4 +37,5 @@ class SDeadlineUpdate(BaseModel):
     repeat: bool | None = None
     difficulty: Difficulty | None = None
     tag: str | None = None
+    comment: str | None = None
     send_notification: bool | None = None

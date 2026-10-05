@@ -85,6 +85,7 @@ def create_deadline(data: SDeadlineCreate, user, db: Session):
         difficulty=data.difficulty,
         tag=data.tag,
         send_notification=data.send_notification,
+        comment=data.comment,
         user_id=user.id
     )
 
