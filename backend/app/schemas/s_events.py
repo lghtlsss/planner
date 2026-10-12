@@ -35,6 +35,6 @@ class SListEventResponse(BaseModel):
     events: list[SEventResponse]
 
 
-class SEventCreateResponse(BaseModel):
+class SEventCreateOrUpdateResponse(BaseModel):
     event: SEventResponse
     intersection: bool
