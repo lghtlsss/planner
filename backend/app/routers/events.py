@@ -5,7 +5,7 @@ from app.database import get_db
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.models import Event
-from app.schemas import SEventCreate, SEventResponse, SEventUpdate, SListEventResponse, SEventCreateResponse
+from app.schemas import SEventCreate, SEventResponse, SEventUpdate, SListEventResponse, SEventCreateOrUpdateResponse
 
 from app.services import create_event_service, delete_event_service, get_single_event_service, update_event_service
 
@@ -22,7 +22,7 @@ def get_single_event(event_id: int, current_user: User = Depends(get_current_use
     return get_single_event_service(event_id, current_user, db)
 
 
-@router.post("/new", response_model=SEventCreateResponse)
+@router.post("/new", response_model=SEventCreateOrUpdateResponse)
 def create_event(data: SEventCreate, current_user: User = Depends(get_current_user),
                  db: Session = Depends(get_db)):
     return create_event_service(data, current_user, db)
@@ -33,6 +33,6 @@ def delete_event(event_id: int, current_user: User = Depends(get_current_user), 
     return delete_event_service(event_id, current_user, db)
 
 
-@router.patch("/update/{event_id}")
+@router.patch("/update/{event_id}", response_model=SEventCreateOrUpdateResponse)
 def update_event(data: SEventUpdate, event_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return update_event_service(event_id, current_user, data, db)
