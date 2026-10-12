@@ -5,7 +5,7 @@ from sqlalchemy import select
 from app.schemas import SEventCreate, SEventUpdate
 
 
-def check_intersection(user: User, data: SEventUpdate | SEventCreate, db: Session):
+def check_intersection(user: User, data: Event | SEventCreate, db: Session):
     """
     Проверяет, пересекается ли событие с уже запланированными.
     """
@@ -14,7 +14,7 @@ def check_intersection(user: User, data: SEventUpdate | SEventCreate, db: Sessio
         Event.event_date == data.event_date,
         Event.start_time < data.end_time,
         Event.end_time > data.start_time
-    )).scalar_one_or_none()
+    )).scalars().all()
     if events_intersection is not None:
         return True
     return False
@@ -38,6 +38,8 @@ def create_event_service(data: SEventCreate, user: User, db: Session):
                             )
 
     intersection_flag = check_intersection(user, data, db)
+
+    # сделать проверку, что конец позже начала
 
     new_event = Event(
         name=data.name,
@@ -104,7 +106,8 @@ def update_event_service(event_id: int, user: User, data: SEventUpdate, db: Sess
     for key, value in fields_to_update.items():
         setattr(curr_event, key, value)
 
-    intersection = check_intersection(user, data, db)
+    intersection = check_intersection(user, curr_event, db)
+    # сделать проверку, что конец позже начала
 
     db.commit()
     db.refresh(curr_event)
