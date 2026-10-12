@@ -1,3 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
+
 export default function Home() {
-  return <p></p>;
+  const { data } = useQuery({
+    queryKey: ["test"],
+    queryFn: async () => {
+      const res = await fetch("123");
+      return await res.json();
+    },
+  });
+  return <p>{data}</p>;
 }

@@ -37,10 +37,6 @@ export interface Event {
   event_date: string;
 }
 
-export interface EventListResponse {
-  events: Event[];
-}
-
 export interface CreateEventRequest {
   name: string;
   description?: string | null;
@@ -72,10 +68,6 @@ export interface Deadline {
   tag: string | null;
   comment: string | null;
   send_notification: boolean;
-}
-
-export interface DeadlineListResponse {
-  deadlines: Deadline[];
 }
 
 export interface CreateDeadlineRequest {

@@ -1,5 +1,5 @@
 import { apiRequest } from "./client";
-import { setAccessToken, removeAccessToken } from "./token-storage";
+import { setSession } from "./session";
 import type {
   LoginRequest,
   RegisterRequest,
@@ -15,23 +15,20 @@ export async function register(data: RegisterRequest): Promise<User> {
   });
 }
 
-export async function login(data: LoginRequest): Promise<TokenResponse> {
-  const body = new URLSearchParams();
-
-  body.set("username", data.email);
-  body.set("password", data.password);
-
-  const response = await apiRequest<TokenResponse>("/auth/login", {
-    method: "POST",
-    auth: false,
-    body,
+export async function login(data: LoginRequest): Promise<string> {
+  const form = new URLSearchParams({
+    username: data.email,
+    password: data.password,
   });
 
-  setAccessToken(response.access_token);
+  const tokens = await apiRequest<TokenResponse>("/auth/login", {
+    method: "POST",
+    auth: false,
+    body: form,
+  });
 
-  return response;
-}
+  const session: string = tokens.access_token;
 
-export function logout(): void {
-  removeAccessToken();
+  setSession(session);
+  return session;
 }
