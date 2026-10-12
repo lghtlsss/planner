@@ -8,19 +8,12 @@ import type {
 
 export async function getDeadlines(): Promise<Deadline[]> {
   const response = await apiRequest<{ deadlines: Deadline[] }>("/deadlines");
-
   return response.deadlines;
 }
 
 export async function getDeadlinesByDate(date: string): Promise<Deadline[]> {
-  const params = new URLSearchParams({
-    dd_date: date,
-  });
-
-  const response = await apiRequest<{ deadlines: Deadline[] }>(
-    `/deadlines/bydate?${params.toString()}`,
-  );
-
+  const params = new URLSearchParams({ dd_date: date });
+  const response = await apiRequest<{ deadlines: Deadline[] }>(`/deadlines/bydate?${params}`);
   return response.deadlines;
 }
 
@@ -35,10 +28,7 @@ export function createDeadline(data: CreateDeadlineRequest): Promise<Deadline> {
   });
 }
 
-export function updateDeadline(
-  deadlineId: number,
-  data: UpdateDeadlineRequest,
-): Promise<Deadline> {
+export function updateDeadline(deadlineId: number, data: UpdateDeadlineRequest): Promise<Deadline> {
   return apiRequest<Deadline>(`/deadlines/patch/${deadlineId}`, {
     method: "PATCH",
     body: JSON.stringify(data),

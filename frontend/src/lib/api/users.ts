@@ -13,7 +13,5 @@ export function updateMe(data: UpdateUserRequest): Promise<User> {
 }
 
 export function deleteMe(): Promise<MessageResponse> {
-  return apiRequest<MessageResponse>("/users/me", {
-    method: "DELETE",
-  });
+  return apiRequest<MessageResponse>("/users/me", { method: "DELETE" });
 }

@@ -7,6 +7,7 @@ export interface ValidationError {
 
 export interface ApiErrorResponse {
   detail?: string | ValidationError[];
+  message?: string;
 }
 
 export class ApiError extends Error {
@@ -14,6 +15,7 @@ export class ApiError extends Error {
     public readonly status: number,
     message: string,
     public readonly details?: unknown,
+    public readonly invalidatesSession = false,
   ) {
     super(message);
     this.name = "ApiError";
@@ -37,13 +39,7 @@ export class ApiError extends Error {
 }
 
 export function getApiErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error) return error.message;
   return "Произошла неизвестная ошибка";
 }
