@@ -62,7 +62,7 @@ def update_deadline_by_id(data: SDeadlineUpdate, dd_id: int, db: Session, user: 
     """
     db_dd = get_deadline_for_user(user, dd_id, db)
 
-    to_update = data.model_dump()
+    to_update = data.model_dump(exclude_unset=True)
 
     for key, value in to_update.items():
         setattr(db_dd, key, value)
