@@ -1,6 +1,5 @@
 export * from "./types";
 export * from "./errors";
-export * from "./session";
 export * from "./client";
 export * from "./auth";
 export * from "./users";
