@@ -1,6 +1,7 @@
 "use client";
 
-import { ApiError, clearSession, getSession } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { clearSession, getSession } from "@/lib/session";
 import {
   MutationCache,
   QueryCache,
