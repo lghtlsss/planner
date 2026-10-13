@@ -11,7 +11,7 @@ export function getSession(): string | null {
 
 export function setSession(session: string): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  localStorage.setItem(SESSION_STORAGE_KEY, session);
 }
 
 export function clearSession(): void {
