@@ -1,5 +1,5 @@
 import { apiRequest } from "./client";
-import { setSession } from "./session";
+import { setSession } from "../session";
 import type {
   LoginRequest,
   RegisterRequest,

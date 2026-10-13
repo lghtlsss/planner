@@ -16,7 +16,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={cn("h-full", "antialiased", "font-sans", inter.variable)}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{
+        var t = localStorage.getItem("app-theme");
+        var isDark = t === "dark" || ((!t || t === "system") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", isDark);
+      }catch(e){}})()`,
+          }}
+        />
+      </head>
       <Provider>
         <body className="min-h-full flex flex-col">{children}</body>
       </Provider>
