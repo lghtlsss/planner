@@ -16,14 +16,19 @@ export function getEvent(eventId: number): Promise<Event> {
   return apiRequest<Event>(`/events/${eventId}`);
 }
 
-export function createEvent(data: CreateEventRequest): Promise<CreateEventResponse> {
+export function createEvent(
+  data: CreateEventRequest,
+): Promise<CreateEventResponse> {
   return apiRequest<CreateEventResponse>("/events/new", {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export function updateEvent(eventId: number, data: UpdateEventRequest): Promise<Event> {
+export function updateEvent(
+  eventId: number,
+  data: UpdateEventRequest,
+): Promise<Event> {
   return apiRequest<Event>(`/events/update/${eventId}`, {
     method: "PATCH",
     body: JSON.stringify(data),
