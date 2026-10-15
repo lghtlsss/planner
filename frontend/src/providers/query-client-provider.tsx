@@ -9,7 +9,7 @@ import {
   QueryClientProvider as QueryProvider,
 } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 
 export const QueryClientProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
@@ -17,21 +17,24 @@ export const QueryClientProvider = ({ children }: { children: ReactNode }) => {
   function handleApiError(error: Error): void {
     if (!(error instanceof ApiError)) return;
     if (!error.isUnauthorized || !error.invalidatesSession) return;
-
     if (!getSession()) return;
 
     clearSession();
     router.push("/");
   }
 
-  function createQueryClient(): QueryClient {
-    return new QueryClient({
-      queryCache: new QueryCache({ onError: handleApiError }),
-      mutationCache: new MutationCache({ onError: handleApiError }),
-    });
-  }
-
-  const queryClient = createQueryClient();
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        queryCache: new QueryCache({ onError: handleApiError }),
+        mutationCache: new MutationCache({ onError: handleApiError }),
+        defaultOptions: {
+          queries: {
+            retry: false,
+          },
+        },
+      }),
+  );
 
   return <QueryProvider client={queryClient}>{children}</QueryProvider>;
 };

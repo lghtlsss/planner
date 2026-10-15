@@ -1,5 +1,5 @@
-import { ApiError, type ApiErrorResponse } from "./errors";
 import { getSession } from "../session";
+import { ApiError, type ApiErrorResponse } from "./errors";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
