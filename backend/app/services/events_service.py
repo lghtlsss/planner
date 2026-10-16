@@ -39,8 +39,6 @@ def create_event_service(data: SEventCreate, user: User, db: Session):
 
     intersection_flag = check_intersection(user, data, db)
 
-    # сделать проверку, что конец позже начала
-
     new_event = Event(
         name=data.name,
         description=data.description,
@@ -107,7 +105,6 @@ def update_event_service(event_id: int, user: User, data: SEventUpdate, db: Sess
         setattr(curr_event, key, value)
 
     intersection = check_intersection(user, curr_event, db)
-    # сделать проверку, что конец позже начала
 
     db.commit()
     db.refresh(curr_event)
