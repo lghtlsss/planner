@@ -1,9 +1,9 @@
 from app.database import Base
 
 from sqlalchemy.orm import relationship, mapped_column, Mapped
-from sqlalchemy import String, Date, Boolean, ForeignKey
+from sqlalchemy import String, Boolean, ForeignKey, DateTime
 
-from datetime import date
+from datetime import datetime
 from sqlalchemy import Enum as SQLEnum
 from app.enums import Difficulty
 
@@ -26,8 +26,8 @@ class Deadline(Base):
         nullable=True
     )
 
-    expire_date: Mapped[date | None] = mapped_column(
-        Date,
+    expire_date: Mapped[datetime | None] = mapped_column(
+        DateTime,
         nullable=True
     )
 
