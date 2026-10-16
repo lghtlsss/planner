@@ -25,7 +25,11 @@ export const LoginForm = () => {
     onSuccess: () => router.push("/"),
   });
 
-  const form = useForm<LoginFormValues>({
+  const {
+    handleSubmit,
+    formState: { isSubmitting },
+    control,
+  } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
@@ -43,11 +47,11 @@ export const LoginForm = () => {
         <CardTitle>Вход</CardTitle>
       </CardHeader>
       <CardContent>
-        <form id="login-form" onSubmit={form.handleSubmit(onSubmit)}>
+        <form id="login-form" onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <Controller
               name="email"
-              control={form.control}
+              control={control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="email">Почта</FieldLabel>
@@ -57,7 +61,7 @@ export const LoginForm = () => {
                     required
                     placeholder="name@example.com"
                     autoComplete="email"
-                    disabled={isPending}
+                    disabled={isSubmitting}
                     {...field}
                     aria-invalid={fieldState.invalid}
                   />
@@ -70,7 +74,7 @@ export const LoginForm = () => {
 
             <Controller
               name="password"
-              control={form.control}
+              control={control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="password">Пароль</FieldLabel>
@@ -80,7 +84,7 @@ export const LoginForm = () => {
                     placeholder="••••••••"
                     required
                     autoComplete="current-password"
-                    disabled={isPending}
+                    disabled={isSubmitting}
                     {...field}
                     aria-invalid={fieldState.invalid}
                   />
@@ -106,7 +110,7 @@ export const LoginForm = () => {
           className="w-full"
           disabled={isPending}
         >
-          {isPending ? "Вход..." : "Войти"}
+          {isSubmitting ? "Вход..." : "Войти"}
         </Button>
       </CardFooter>
     </Card>
