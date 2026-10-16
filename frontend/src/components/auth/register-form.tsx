@@ -20,12 +20,16 @@ import { useRouter } from "next/navigation";
 export const RegisterForm = () => {
   const router = useRouter();
 
-  const { mutate, isPending, error } = useMutation({
+  const { mutate, error } = useMutation({
     mutationFn: register,
     onSuccess: () => router.push("/"),
   });
 
-  const form = useForm<RegisterFormValues>({
+  const {
+    handleSubmit,
+    formState: { isSubmitting },
+    control,
+  } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: "",
@@ -45,11 +49,11 @@ export const RegisterForm = () => {
         <CardTitle>Регистрация</CardTitle>
       </CardHeader>
       <CardContent>
-        <form id="register-form" onSubmit={form.handleSubmit(onSubmit)}>
+        <form id="register-form" onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <Controller
               name="name"
-              control={form.control}
+              control={control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="name">Имя</FieldLabel>
@@ -59,7 +63,7 @@ export const RegisterForm = () => {
                     required
                     placeholder="Алексей"
                     autoComplete="name"
-                    disabled={isPending}
+                    disabled={isSubmitting}
                     {...field}
                     aria-invalid={fieldState.invalid}
                   />
@@ -71,7 +75,7 @@ export const RegisterForm = () => {
             />
             <Controller
               name="surname"
-              control={form.control}
+              control={control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="surname">Фамилия</FieldLabel>
@@ -81,7 +85,7 @@ export const RegisterForm = () => {
                     required
                     placeholder="Петров"
                     autoComplete="surname"
-                    disabled={isPending}
+                    disabled={isSubmitting}
                     {...field}
                     aria-invalid={fieldState.invalid}
                   />
@@ -93,7 +97,7 @@ export const RegisterForm = () => {
             />
             <Controller
               name="email"
-              control={form.control}
+              control={control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="email">Почта</FieldLabel>
@@ -103,7 +107,7 @@ export const RegisterForm = () => {
                     required
                     placeholder="name@example.com"
                     autoComplete="email"
-                    disabled={isPending}
+                    disabled={isSubmitting}
                     {...field}
                     aria-invalid={fieldState.invalid}
                   />
@@ -115,7 +119,7 @@ export const RegisterForm = () => {
             />
             <Controller
               name="password"
-              control={form.control}
+              control={control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="password">Пароль</FieldLabel>
@@ -125,7 +129,7 @@ export const RegisterForm = () => {
                     placeholder="••••••••"
                     required
                     autoComplete="current-password"
-                    disabled={isPending}
+                    disabled={isSubmitting}
                     {...field}
                     aria-invalid={fieldState.invalid}
                   />
@@ -149,9 +153,9 @@ export const RegisterForm = () => {
           type="submit"
           form="register-form"
           className="w-full"
-          disabled={isPending}
+          disabled={isSubmitting}
         >
-          {isPending ? "Регистрация..." : "Зарегестрироваться"}
+          {isSubmitting ? "Регистрация..." : "Зарегестрироваться"}
         </Button>
       </CardFooter>
     </Card>
