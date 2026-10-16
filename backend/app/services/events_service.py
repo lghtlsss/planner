@@ -39,8 +39,6 @@ def create_event_service(data: SEventCreate, user: User, db: Session):
 
     intersection_flag = check_intersection(user, data, db)
 
-    # сделать проверку, что конец позже начала
-
     new_event = Event(
         name=data.name,
         description=data.description,
@@ -98,11 +96,15 @@ def update_event_service(event_id: int, user: User, data: SEventUpdate, db: Sess
 
     fields_to_update = data.model_dump(exclude_unset=True)
 
+    SEventUpdate(
+        start_time=fields_to_update.get("start_time", curr_event.start_time),
+        end_time=fields_to_update.get("end_time", curr_event.end_time),
+    )
+
     for key, value in fields_to_update.items():
         setattr(curr_event, key, value)
 
     intersection = check_intersection(user, curr_event, db)
-    # сделать проверку, что конец позже начала
 
     db.commit()
     db.refresh(curr_event)
