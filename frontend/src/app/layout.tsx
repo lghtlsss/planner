@@ -5,11 +5,15 @@ import { Inter } from "next/font/google";
 import { Provider } from "@/providers/provider";
 import { cn } from "cn";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "Planner app",
-  description: "",
+  title: "Планер — пары, дедлайны и планы на день",
+  description: "Студенческий планер: расписание пар, светофор дедлайнов и план на каждый день",
 };
 
 const THEME_INIT_SCRIPT = `
@@ -18,7 +22,7 @@ const THEME_INIT_SCRIPT = `
 
   function apply() {
     try {
-      var theme = localStorage.getItem('app-theme') || 'system';
+      var theme = localStorage.getItem('app-theme') || 'light';
       var isDark = theme === 'dark' || (theme === 'system' && mq.matches);
       document.documentElement.classList.toggle('dark', isDark);
     } catch (e) {}
@@ -33,11 +37,11 @@ const THEME_INIT_SCRIPT = `
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="ru"
       className={cn("h-full", "antialiased", "font-sans", inter.variable)}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <Script
           id="theme-init"
           strategy="beforeInteractive"
