@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import { Deadline } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,10 +14,12 @@ import { DeadlineForm } from "./deadline-form";
 
 interface OpenDeadlineFormButtonProps {
   initialDeadline?: Deadline;
+  trigger?: ReactElement;
 }
 
 export const OpenDeadlineFormButton = ({
   initialDeadline,
+  trigger,
 }: OpenDeadlineFormButtonProps) => {
   const [open, setOpen] = useState(false);
   const isEditing = Boolean(initialDeadline);
@@ -25,7 +27,15 @@ export const OpenDeadlineFormButton = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button>{title}</Button>} />
+      <DialogTrigger
+        render={
+          trigger ?? (
+            <Button size={isEditing ? "sm" : "default"} variant={isEditing ? "outline" : "default"}>
+              {isEditing ? "Ред." : "Новое задание"}
+            </Button>
+          )
+        }
+      />
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

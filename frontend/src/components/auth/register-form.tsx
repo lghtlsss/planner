@@ -22,7 +22,7 @@ export const RegisterForm = () => {
 
   const { mutate, error } = useMutation({
     mutationFn: register,
-    onSuccess: () => router.push("/"),
+    onSuccess: () => router.push("/login"),
   });
 
   const {
@@ -44,7 +44,7 @@ export const RegisterForm = () => {
   };
 
   return (
-    <Card size="sm" className="mx-auto w-full max-w-xl">
+    <Card size="sm" className="mx-auto w-full max-w-sm">
       <CardHeader>
         <CardTitle>Регистрация</CardTitle>
       </CardHeader>
@@ -155,7 +155,7 @@ export const RegisterForm = () => {
           className="w-full"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Регистрация..." : "Зарегестрироваться"}
+          {isSubmitting ? "Регистрация..." : "Зарегистрироваться"}
         </Button>
       </CardFooter>
     </Card>

@@ -42,7 +42,7 @@ export const LoginForm = () => {
   };
 
   return (
-    <Card size="sm" className="mx-auto w-full max-w-xl">
+    <Card size="sm" className="mx-auto w-full max-w-sm">
       <CardHeader>
         <CardTitle>Вход</CardTitle>
       </CardHeader>
@@ -58,7 +58,6 @@ export const LoginForm = () => {
                   <Input
                     id="email"
                     type="email"
-                    required
                     placeholder="name@example.com"
                     autoComplete="email"
                     disabled={isSubmitting}
@@ -82,7 +81,6 @@ export const LoginForm = () => {
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    required
                     autoComplete="current-password"
                     disabled={isSubmitting}
                     {...field}

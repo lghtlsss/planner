@@ -1,6 +1,6 @@
 "use client";
 
-import { CreateEventRequest } from "@/lib/api";
+import { createEvent, CreateEventRequest } from "@/lib/api";
 import { EventFormValues, eventSchema } from "./schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -12,7 +12,7 @@ import { DeadlineList } from "../deadlines";
 import { Button } from "../ui/button";
 
 const testCreateEvent = async (data: CreateEventRequest) => {
-  console.log(data);
+  return createEvent(data);
 };
 
 interface EventFormProps {

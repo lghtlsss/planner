@@ -1,5 +1,6 @@
 import { getSession } from "../session";
 import { ApiError, type ApiErrorResponse } from "./errors";
+import { handleLocalRequest, LOCAL_SESSION } from "./local";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -66,15 +67,24 @@ export async function apiRequest<T>(
   const { auth = true, headers: requestHeaders, ...requestOptions } = options;
 
   const token = auth ? getSession() : undefined;
+  if (token === LOCAL_SESSION) {
+    return handleLocalRequest<T>(path, requestOptions);
+  }
+
   const headers = new Headers(requestHeaders);
 
   setBodyContentType(headers, requestOptions.body);
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...requestOptions,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...requestOptions,
+      headers,
+    });
+  } catch {
+    return handleLocalRequest<T>(path, requestOptions);
+  }
 
   if (!response.ok) {
     const invalidatesSession =
