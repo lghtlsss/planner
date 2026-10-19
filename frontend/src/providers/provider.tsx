@@ -2,7 +2,12 @@
 
 import { ReactNode } from "react";
 import { QueryClientProvider } from "./query-client-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const Provider = ({ children }: { children: ReactNode }) => {
-  return <QueryClientProvider>{children}</QueryClientProvider>;
+  return (
+    <TooltipProvider>
+      <QueryClientProvider>{children}</QueryClientProvider>
+    </TooltipProvider>
+  );
 };
