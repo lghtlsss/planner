@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { register } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
@@ -11,6 +10,7 @@ import { RegisterFormValues, registerSchema } from "./schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Eye, EyeOff, Mail } from "lucide-react";
+import { useState } from "react";
 
 interface RegisterFormProps {
   onSwitchToLogin?: () => void;
@@ -18,7 +18,7 @@ interface RegisterFormProps {
 
 export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   const router = useRouter();
-  const [showPassword, setShowPassword] = React.useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { mutate, isPending, error } = useMutation({
     mutationFn: register,
@@ -63,7 +63,8 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
               Ошибка регистрации
             </span>
             <span className="text-caption text-text-secondary">
-              {error.message || "Проверьте введённые данные и попробуйте снова."}
+              {error.message ||
+                "Проверьте введённые данные и попробуйте снова."}
             </span>
           </div>
         </div>
@@ -197,9 +198,7 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
           className="w-full"
           disabled={isSubmitting || isPending}
         >
-          {isSubmitting || isPending
-            ? "Регистрация..."
-            : "Зарегистрироваться"}
+          {isSubmitting || isPending ? "Регистрация..." : "Зарегистрироваться"}
         </Button>
       </form>
 
