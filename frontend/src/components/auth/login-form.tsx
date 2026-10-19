@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { login } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
@@ -11,6 +10,7 @@ import { LoginFormValues, loginSchema } from "./schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Eye, EyeOff, Mail } from "lucide-react";
+import { useState } from "react";
 
 interface LoginFormProps {
   onSwitchToRegister?: () => void;
@@ -18,7 +18,7 @@ interface LoginFormProps {
 
 export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
   const router = useRouter();
-  const [showPassword, setShowPassword] = React.useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { mutate, isPending, error } = useMutation({
     mutationFn: login,
