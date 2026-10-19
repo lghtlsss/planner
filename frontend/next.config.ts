@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   },
   assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
   reactCompiler: true,
+  allowedDevOrigins: ["127.0.0.1", "172.18.0.1"],
 };
 
 export default nextConfig;

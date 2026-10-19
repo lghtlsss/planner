@@ -1,15 +1,32 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { Provider } from "@/providers/provider";
 import { cn } from "cn";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-sans",
+});
 
 export const metadata: Metadata = {
-  title: "Planner app",
-  description: "",
+  title: "Планер",
+  description: "Учебный планер",
+  applicationName: "Планер",
+  appleWebApp: {
+    capable: true,
+    title: "Планер",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f4f3fb",
 };
 
 const THEME_INIT_SCRIPT = `
@@ -33,7 +50,7 @@ const THEME_INIT_SCRIPT = `
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="ru"
       className={cn("h-full", "antialiased", "font-sans", inter.variable)}
       suppressHydrationWarning
     >

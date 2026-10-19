@@ -15,11 +15,12 @@ import {
 } from "@/components/ui/field";
 
 import { deadlineSchema, DeadlineFormValues } from "./schemas";
-import { Deadline } from "@/lib/api";
-
-const testSaveDeadline = async (deadline: Partial<Deadline>) => {
-  console.log("Saving deadline:", deadline);
-};
+import {
+  createDeadline,
+  deleteDeadline,
+  updateDeadline,
+  type Deadline,
+} from "@/lib/api";
 
 function splitIsoToLocalInputs(isoString?: string | null): [string, string] {
   const d = isoString ? new Date(isoString) : new Date();
@@ -60,12 +61,31 @@ export function DeadlineForm({
   });
 
   const { mutate, isPending } = useMutation({
-    mutationFn: testSaveDeadline,
+    mutationFn: async (deadline: {
+      title: string;
+      expire_date: string | null;
+      comment: string | null;
+    }) => {
+      if (initialDeadline) {
+        return updateDeadline(initialDeadline.id, deadline);
+      }
+      return createDeadline(deadline);
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["deadlines"] });
       onSuccess?.();
     },
   });
+
+  const { mutate: remove, isPending: isDeleting } = useMutation({
+    mutationFn: () => deleteDeadline(initialDeadline!.id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["deadlines"] });
+      onSuccess?.();
+    },
+  });
+
+  const busy = isPending || isDeleting;
 
   const hasDeadline = useWatch({ control, name: "hasDeadline" });
 
@@ -78,7 +98,6 @@ export function DeadlineForm({
     const trimmedComment = data.comment.trim();
 
     mutate({
-      id: initialDeadline?.id,
       title: data.title,
       expire_date,
       comment: trimmedComment.length === 0 ? null : trimmedComment,
@@ -102,7 +121,7 @@ export function DeadlineForm({
               <Input
                 id="title"
                 type="text"
-                disabled={isPending}
+                disabled={busy}
                 aria-invalid={fieldState.invalid}
                 {...field}
               />
@@ -123,7 +142,7 @@ export function DeadlineForm({
                 id="hasDeadline"
                 type="checkbox"
                 className="size-4 shrink-0 p-0 shadow-none"
-                disabled={isPending}
+                disabled={busy}
                 checked={value}
                 onChange={(e) => {
                   const checked = e.target.checked;
@@ -149,7 +168,7 @@ export function DeadlineForm({
                   <Input
                     id="date"
                     type="date"
-                    disabled={isPending}
+                    disabled={busy}
                     aria-invalid={fieldState.invalid}
                     {...field}
                   />
@@ -168,7 +187,7 @@ export function DeadlineForm({
                   <Input
                     id="time"
                     type="time"
-                    disabled={isPending}
+                    disabled={busy}
                     aria-invalid={fieldState.invalid}
                     {...field}
                   />
@@ -190,7 +209,7 @@ export function DeadlineForm({
               <Input
                 id="comment"
                 type="text"
-                disabled={isPending}
+                disabled={busy}
                 aria-invalid={fieldState.invalid}
                 {...field}
               />
@@ -201,14 +220,26 @@ export function DeadlineForm({
       </FieldGroup>
 
       <DialogFooter>
+        {initialDeadline && (
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={busy}
+            onClick={() => {
+              if (confirm("Удалить это задание?")) remove();
+            }}
+          >
+            Удалить
+          </Button>
+        )}
         <DialogClose
           render={
-            <Button type="button" variant="outline" disabled={isPending}>
+            <Button type="button" variant="outline" disabled={busy}>
               Закрыть
             </Button>
           }
         />
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={busy}>
           Сохранить
         </Button>
       </DialogFooter>

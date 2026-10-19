@@ -20,7 +20,7 @@ export const QueryClientProvider = ({ children }: { children: ReactNode }) => {
     if (!getSession()) return;
 
     clearSession();
-    router.push("/");
+    router.push("/login");
   }
 
   const [queryClient] = useState(
