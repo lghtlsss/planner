@@ -8,11 +8,13 @@ import { cn } from "cn";
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
   variable: "--font-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Планер",
-  description: "Учебный планер",
+  title: "Планер — пары, дедлайны и планы на день",
+  description:
+    "Студенческий планер: расписание пар, светофор дедлайнов и план на каждый день",
   applicationName: "Планер",
   appleWebApp: {
     capable: true,
@@ -26,7 +28,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#f4f3fb",
+  themeColor: "#F6F7FB",
 };
 
 const THEME_INIT_SCRIPT = `
@@ -35,7 +37,7 @@ const THEME_INIT_SCRIPT = `
 
   function apply() {
     try {
-      var theme = localStorage.getItem('app-theme') || 'system';
+      var theme = localStorage.getItem('app-theme') || 'light';
       var isDark = theme === 'dark' || (theme === 'system' && mq.matches);
       document.documentElement.classList.toggle('dark', isDark);
     } catch (e) {}
@@ -54,7 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={cn("h-full", "antialiased", "font-sans", inter.variable)}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <Script
           id="theme-init"
           strategy="beforeInteractive"

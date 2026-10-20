@@ -5,6 +5,21 @@ from sqlalchemy import select
 from app.schemas import SEventCreate, SEventUpdate
 
 
+def check_intersection(user: User, data: Event | SEventCreate, db: Session):
+    """
+    Проверяет, пересекается ли событие с уже запланированными.
+    """
+    events_intersection = db.execute(select(Event).where(
+        Event.user_id == user.id,
+        Event.event_date == data.event_date,
+        Event.start_time < data.end_time,
+        Event.end_time > data.start_time
+    )).scalars().all()
+    if events_intersection is not None:
+        return True
+    return False
+
+
 def create_event_service(data: SEventCreate, user: User, db: Session):
     """
     Создаёт событие.
@@ -22,15 +37,7 @@ def create_event_service(data: SEventCreate, user: User, db: Session):
                             detail="У вас уже есть событие на это время"
                             )
 
-    events_intersection = db.execute(select(Event).where(
-        Event.user_id == user.id,
-        Event.event_date == data.event_date,
-        Event.start_time < data.end_time,
-        Event.end_time > data.start_time
-    )).scalar_one_or_none()
-    intersection_flag = False
-    if events_intersection is not None:
-        intersection_flag = True
+    intersection_flag = check_intersection(user, data, db)
 
     new_event = Event(
         name=data.name,
@@ -83,16 +90,23 @@ def get_single_event_service(event_id: int, user: User, db: Session) -> Event:
     return get_event_for_user(event_id, user, db)
 
 
-def update_event_service(event_id: int, user: User, data: SEventUpdate, db: Session) -> Event:
-    """Patch данных о событии"""
+def update_event_service(event_id: int, user: User, data: SEventUpdate, db: Session):
+    """Обновление данных о событии с проверкой на пересечение"""
     curr_event = get_event_for_user(event_id, user, db)
 
     fields_to_update = data.model_dump(exclude_unset=True)
 
+    SEventUpdate(
+        start_time=fields_to_update.get("start_time", curr_event.start_time),
+        end_time=fields_to_update.get("end_time", curr_event.end_time),
+    )
+
     for key, value in fields_to_update.items():
         setattr(curr_event, key, value)
+
+    intersection = check_intersection(user, curr_event, db)
 
     db.commit()
     db.refresh(curr_event)
 
-    return curr_event
+    return {"event": curr_event, "intersection": intersection}

@@ -18,15 +18,12 @@ from datetime import datetime
 
 from .models import ParsedSchedule, ParseWarning, WarningSeverity
 
-
 class ScheduleValidationError(Exception):
     """Критическая ошибка валидации — импортировать/публиковать нельзя."""
-
 
 def _parse_hhmm(value: str) -> tuple[int, int]:
     h, m = value.split(":")
     return int(h), int(m)
-
 
 def validate_schedule(schedule: ParsedSchedule) -> list[ParseWarning]:
     warnings: list[ParseWarning] = list(schedule.warnings)
@@ -109,15 +106,13 @@ def validate_schedule(schedule: ParsedSchedule) -> list[ParseWarning]:
 
     return warnings
 
-
 def sanity_check_against_previous(
     schedule: ParsedSchedule,
     previous_group_count: int | None,
     previous_lesson_count: int | None,
     drop_ratio_threshold: float = 0.5,
 ) -> list[ParseWarning]:
-    """Грубая защита от "тихой" деградации при обновлении источника
-    (ТЗ, раздел 20 — пример с 26 группами/4300 занятиями -> 2/17)."""
+    """Грубая защита от "тихой" деградации при обновлении источника."""
     warnings: list[ParseWarning] = []
     current_groups = len({lesson.group for lesson in schedule.lessons})
     current_lessons = len(schedule.lessons)
@@ -145,7 +140,6 @@ def sanity_check_against_previous(
         )
 
     return warnings
-
 
 def raise_if_critical(warnings: list[ParseWarning]) -> None:
     critical = [w for w in warnings if w.severity == WarningSeverity.CRITICAL]

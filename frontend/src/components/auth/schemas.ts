@@ -8,7 +8,7 @@ export const loginSchema = z.object({
 export const registerSchema = z.object({
   name: z.string(),
   surname: z.string(),
-  email: z.email("Неверный email"),
+  email: z.string(),
   password: z.string(),
 });
 

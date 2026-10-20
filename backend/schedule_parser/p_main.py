@@ -1,6 +1,4 @@
-"""
-Два независимых пути получения данных (см. ANALYSIS.md, раздел
-"Источники" и "Google Sheets API"):
+""" Точка входа
 
 - локальный xlsx-файл -> core/parser.py (openpyxl) — как и раньше;
 - ссылка на Google Таблицу -> core/gsheets_api.py (Google Sheets API v4),
@@ -15,26 +13,16 @@
   core/source.py, т.к. это не Google Таблицы и Sheets API тут не
   применим в принципе.
 
-Оба пути сходятся в одной и той же точке: core/parser.RawSheet ->
-build_schedule_from_raw() -> core/normalizer.normalize_cell() -> JSON.
-Ни core/parser.py, ни core/normalizer.py при этом не меняются.
-
 Использование:
-    python main.py путь/к/файлу.xlsx/ссылка --api-key key(для ссылки) \
-        [--sheets "1 курс,2 курс"](по умолчанию все) [--out result.json](куда записывать результат)
-    python main.py путь/к/файлу.xlsx [--sheets "1 курс,2 курс"] [--out result.json]
-    python main.py "https://docs.google.com/spreadsheets/d/.../edit?usp=drive_link" \
-        --api-key AIzaSyBk12_cvPOZgM8fVVbuBsFDuadzYoO640A --out result.json
+    python p_main.py путь/к/файлу.xlsx [--sheets "1 курс,2 курс"] [--out result.json]
+    python p_main.py "https://docs.google.com/spreadsheets/d/.../edit?usp=drive_link" \
+        --api-key КЛЮЧ --out result.json
 
 Примеры:
-python main.py "1 модуль - Ф-т ИМиКН - БАК Компьютерные науки и технологии.xlsx" --out schedule.json
-python main.py "1 модуль - Ф-т ИМиКН - БАК Компьютерные науки и технологии.xlsx" --sheets "1 курс,2 курс" --out schedule12.json
-python main.py "https://docs.google.com/spreadsheets/d/1GyQ6IklpcoT7Sir6C7rNU9aNErDX1HWBg7Y1EK5T-nA/edit?gid=739453176" --api-key AIzaSyBk12_cvPOZgM8fVVbuBsFDuadzYoO640A --out scheduleU.json
-python main.py "https://docs.google.com/spreadsheets/d/1GyQ6IklpcoT7Sir6C7rNU9aNErDX1HWBg7Y1EK5T-nA/edit?gid=739453176" --api-key AIzaSyBk12_cvPOZgM8fVVbuBsFDuadzYoO640A --sheets "1 курс" --out scheduleU2.json
+python schedule_parser/p_main.py "https://docs.google.com/spreadsheets/d/1GyQ6IklpcoT7Sir6C7rNU9aNErDX1HWBg7Y1EK5T-nA/edit?gid=739453176" --api-key AIzaSyBk12_cvPOZgM8fVVbuBsFDuadzYoO640A --out scheduleU.json
+python p_main.py "https://disk.360.yandex.ru/i/-H0wJzND567qmw" --out schedule.json
 
-python main.py "https://disk.360.yandex.ru/i/-H0wJzND567qmw" --out schedule.json
 """
-
 
 from __future__ import annotations
 
@@ -46,26 +34,23 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from core.gsheets_api import GoogleSheetsAPIError, build_raw_sheets_from_api
-from core.models import (
-    Building,
-    Group,
-    ParsedSchedule,
-    ParseWarning,
-    ScheduleMetadata,
-    WarningSeverity,
+from core import (
+    GoogleSheetsAPIError, fetch_schedule_from_api,
+    Building, Group, ParsedSchedule, ParseWarning, ScheduleMetadata, WarningSeverity,
+    normalize_cell, resolve_year,
+    RawSheet, extract_raw_sheet, load_workbook_resilient,
+    GOOGLE_SHEETS_RE, ScheduleSourceError, resolve_source,
+    validate_schedule,
 )
-from core.normalizer import normalize_cell, resolve_year
-from core.parser import RawSheet, extract_raw_sheet, load_workbook_resilient
-from core.source import GOOGLE_SHEETS_RE, ScheduleSourceError, resolve_source
-from core.validators import validate_schedule
 
-FACULTY = "ИМиКН"
-PROGRAM = 'БАК "Компьютерные науки и технологии"'
+# Используются только для локальных файлов и xlsx-экспорта (там названия таблицы нет).
+# Для Google Sheets API факультет/программа берутся из названия таблицы
+# ("1 модуль - Ф-т ПРАВА - БАК (Юриспруденция)") или из --faculty/--program.
+DEFAULT_FACULTY = "ИМиКН"
+DEFAULT_PROGRAM = 'БАК "Компьютерные науки и технологии"'
 
 YEAR_RE = re.compile(r"(\d{4})\s*-\s*\d{4}\s*учебный год", re.IGNORECASE)
 API_KEY_ENV_VAR = "GOOGLE_SHEETS_API_KEY"
-
 
 def detect_academic_year_start_from_workbook(wb) -> tuple[int | None, list[ParseWarning]]:
     """Используется только в xlsx-пути (локальный файл / резервная
@@ -87,11 +72,13 @@ def detect_academic_year_start_from_workbook(wb) -> tuple[int | None, list[Parse
         )
     ]
 
-
 def build_schedule_from_raw(raw: RawSheet, academic_year_start: int) -> ParsedSchedule:
     """Единая точка сборки ParsedSchedule из уже извлечённой структуры
     (RawSheet) — общая для xlsx-пути и API-пути, дальше они ничем не
     отличаются."""
+    faculty = raw.meta.faculty or "Не указан"
+    program = raw.meta.program or "Не указана"
+
     warnings: list[ParseWarning] = []
     for err in raw.structural_errors:
         warnings.append(ParseWarning(severity=WarningSeverity.CRITICAL, message=err, location=raw.sheet_name))
@@ -106,8 +93,8 @@ def build_schedule_from_raw(raw: RawSheet, academic_year_start: int) -> ParsedSc
         if cell.group_name not in groups:
             groups[cell.group_name] = Group(
                 name=cell.group_name,
-                program=PROGRAM,
-                faculty=FACULTY,
+                program=program,
+                faculty=faculty,
                 course=raw.meta.course or 0,
                 stream_label=cell.stream_label,
             )
@@ -143,8 +130,8 @@ def build_schedule_from_raw(raw: RawSheet, academic_year_start: int) -> ParsedSc
             )
 
     metadata = ScheduleMetadata(
-        faculty=FACULTY,
-        program=PROGRAM,
+        faculty=faculty,
+        program=program,
         course=raw.meta.course or 0,
         module=raw.meta.module or 0,
         period_start=period_start,
@@ -163,7 +150,6 @@ def build_schedule_from_raw(raw: RawSheet, academic_year_start: int) -> ParsedSc
     schedule.warnings = validate_schedule(schedule)
     return schedule
 
-
 def _print_summary(sheet_name: str, schedule: ParsedSchedule) -> None:
     n_critical = sum(1 for w in schedule.warnings if w.severity == WarningSeverity.CRITICAL)
     n_error = sum(1 for w in schedule.warnings if w.severity == WarningSeverity.ERROR)
@@ -178,16 +164,32 @@ def _print_summary(sheet_name: str, schedule: ParsedSchedule) -> None:
 # Путь через Google Sheets API (приоритетный для ссылок на Google Таблицы)
 # ---------------------------------------------------------------------------
 
-
-def run_via_google_api(spreadsheet_id: str, api_key: str, sheets_filter: str | None) -> tuple[dict, bool]:
-    raw_sheets, academic_year_start = build_raw_sheets_from_api(
+def run_via_google_api(
+    spreadsheet_id: str,
+    api_key: str,
+    sheets_filter: str | None,
+    faculty: str | None,
+    program: str | None,
+) -> tuple[dict, bool]:
+    result = fetch_schedule_from_api(
         spreadsheet_id=spreadsheet_id,
         api_key=api_key,
-        faculty=FACULTY,
-        program=PROGRAM,
+        faculty=faculty,
+        program=program,
         sheet_filter_regex=sheets_filter or "курс",
     )
+    print(
+        f"Таблица: {result.spreadsheet_title!r} | факультет: {result.faculty!r} | "
+        f"программа: {result.program!r}"
+    )
+    if result.faculty is None:
+        print(
+            "ПРЕДУПРЕЖДЕНИЕ: не удалось определить факультет из названия таблицы — "
+            "укажите --faculty и --program.",
+            file=sys.stderr,
+        )
 
+    academic_year_start = result.academic_year_start
     year_warning = []
     if academic_year_start is None:
         print("ПРЕДУПРЕЖДЕНИЕ: не удалось определить учебный год, использую текущий год.", file=sys.stderr)
@@ -201,7 +203,7 @@ def run_via_google_api(spreadsheet_id: str, api_key: str, sheets_filter: str | N
 
     results = {}
     any_critical = False
-    for raw in raw_sheets:
+    for raw in result.raw_sheets:
         schedule = build_schedule_from_raw(raw, academic_year_start)
         schedule.warnings = year_warning + schedule.warnings
         _print_summary(raw.sheet_name, schedule)
@@ -216,8 +218,9 @@ def run_via_google_api(spreadsheet_id: str, api_key: str, sheets_filter: str | N
 # Путь через xlsx (локальный файл или резервная сетевая выгрузка)
 # ---------------------------------------------------------------------------
 
-
-def run_via_xlsx(user_input: str, sheets_filter: str | None) -> tuple[dict, bool]:
+def run_via_xlsx(
+    user_input: str, sheets_filter: str | None, faculty: str | None = None, program: str | None = None
+) -> tuple[dict, bool]:
     try:
         source = resolve_source(user_input)
     except ScheduleSourceError as exc:
@@ -256,7 +259,9 @@ def run_via_xlsx(user_input: str, sheets_filter: str | None) -> tuple[dict, bool
             print(f"ПРЕДУПРЕЖДЕНИЕ: лист '{sheet_name}' не найден, пропускаю.", file=sys.stderr)
             continue
         ws = wb[sheet_name]
-        raw = extract_raw_sheet(ws, faculty=FACULTY, program=PROGRAM)
+        raw = extract_raw_sheet(
+            ws, faculty=faculty or DEFAULT_FACULTY, program=program or DEFAULT_PROGRAM
+        )
         schedule = build_schedule_from_raw(raw, academic_year_start)
         schedule.warnings = year_warnings + schedule.warnings
         _print_summary(sheet_name, schedule)
@@ -265,7 +270,6 @@ def run_via_xlsx(user_input: str, sheets_filter: str | None) -> tuple[dict, bool
         results[sheet_name] = schedule.to_dict()
 
     return results, any_critical
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Parser расписания НИУ ВШЭ (Этап 1)")
@@ -290,6 +294,8 @@ def main() -> int:
         action="store_true",
         help="Даже для ссылки на Google Таблицу использовать xlsx-экспорт, а не API.",
     )
+    parser.add_argument("--faculty", help="Факультет (иначе — из названия Google-таблицы)")
+    parser.add_argument("--program", help="Программа (иначе — из названия Google-таблицы)")
     parser.add_argument("--sheets", help="Список листов через запятую, либо regex-фильтр (по умолчанию — все листы с курсами)")
     parser.add_argument("--out", default="schedule.json", help="Куда сохранить JSON-результат")
     args = parser.parse_args()
@@ -300,7 +306,9 @@ def main() -> int:
         if args.api_key:
             print("Способ получения данных: Google Sheets API.")
             try:
-                results, any_critical = run_via_google_api(google_match.group(1), args.api_key, args.sheets)
+                results, any_critical = run_via_google_api(
+                    google_match.group(1), args.api_key, args.sheets, args.faculty, args.program
+                )
             except GoogleSheetsAPIError as exc:
                 print(f"ОШИБКА Google Sheets API: {exc}", file=sys.stderr)
                 return 2
@@ -312,9 +320,9 @@ def main() -> int:
                 "для надёжности рекомендуется получить API-ключ (см. ANALYSIS.md).",
                 file=sys.stderr,
             )
-            results, any_critical = run_via_xlsx(args.source, args.sheets)
+            results, any_critical = run_via_xlsx(args.source, args.sheets, args.faculty, args.program)
     else:
-        results, any_critical = run_via_xlsx(args.source, args.sheets)
+        results, any_critical = run_via_xlsx(args.source, args.sheets, args.faculty, args.program)
 
     out_path = Path(args.out)
     out_path.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")

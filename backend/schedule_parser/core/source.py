@@ -1,25 +1,4 @@
-"""
-Источник расписания.
-
-Согласно ТЗ (раздел 3), parser не должен быть жёстко привязан к тому,
-откуда физически взялся файл. Этот модуль — единственное место, которое
-знает про HTTP/Google/Яндекс.Диск; наружу (в core/parser.py) всегда
-отдаются просто байты валидного xlsx на диске плюс их sha256. Ни
-parser.py, ни normalizer.py не меняются вне зависимости от того, что
-добавится сюда в будущем (авторизованный доступ, кэширование и т. п.).
-
-Поддерживаемые виды ввода (см. ANALYSIS.md, раздел "Источники"):
-- локальный путь к xlsx-файлу;
-- ссылка на Google Таблицу (любой из типовых форматов —
-  .../edit?gid=..., .../edit?usp=drive_link, просто /d/{id}/...);
-- публичная ссылка на Яндекс.Диск (disk.yandex.*, yadi.sk);
-- произвольная прямая ссылка на скачивание xlsx.
-
-Ни один из сетевых источников не требует авторизации — они рассчитаны
-на файлы, доступные "по ссылке". Приватные ресурсы будут явно и понятно
-отклонены (см. _ensure_looks_like_xlsx), а не тихо превращены в мусор
-на входе parser'а.
-"""
+""" Источник расписания. """
 
 from __future__ import annotations
 
@@ -39,20 +18,16 @@ USER_AGENT = (
 )
 HTTP_TIMEOUT = 30
 
-
 class ScheduleSourceError(Exception):
     """Базовая ошибка получения расписания из источника."""
-
 
 class SourceAccessError(ScheduleSourceError):
     """Источник недоступен, требует авторизации, или отдал не тот
     контент, который ожидался (не файл xlsx)."""
 
-
 class UnsupportedSourceError(ScheduleSourceError):
     """Строка, переданная пользователем, не опознана ни как локальный
     путь, ни как один из поддерживаемых видов ссылок."""
-
 
 @dataclass
 class RawFile:
@@ -68,7 +43,6 @@ class RawFile:
         if self._cleanup is not None:
             self._cleanup()
 
-
 class ScheduleSource:
     """Базовый интерфейс источника."""
 
@@ -79,7 +53,6 @@ class ScheduleSource:
 # ---------------------------------------------------------------------------
 # Локальный файл
 # ---------------------------------------------------------------------------
-
 
 class LocalFileSource(ScheduleSource):
     def __init__(self, path: str | Path):
@@ -99,7 +72,6 @@ class LocalFileSource(ScheduleSource):
 
 XLSX_MAGIC = b"PK"  # xlsx — это zip-архив
 
-
 def _ensure_looks_like_xlsx(content: bytes, content_type: Optional[str], origin: str) -> None:
     if content_type and "text/html" in content_type.lower():
         raise SourceAccessError(
@@ -117,13 +89,11 @@ def _ensure_looks_like_xlsx(content: bytes, content_type: Optional[str], origin:
             "Возможно, по этой ссылке лежит не расписание, а другой документ."
         )
 
-
 def _save_to_tempfile(content: bytes, suffix: str = ".xlsx") -> tuple[Path, Callable[[], None]]:
     tmp_dir = Path(tempfile.mkdtemp(prefix="schedule_source_"))
     tmp_path = tmp_dir / f"downloaded{suffix}"
     tmp_path.write_bytes(content)
     return tmp_path, lambda: shutil.rmtree(tmp_dir, ignore_errors=True)
-
 
 def _http_get(url: str, **kwargs) -> requests.Response:
     try:
@@ -144,19 +114,7 @@ def _http_get(url: str, **kwargs) -> requests.Response:
 
 GOOGLE_SHEETS_RE = re.compile(r"docs\.google\.com/spreadsheets/d/([a-zA-Z0-9_-]+)")
 
-
 class GoogleSheetsSource(ScheduleSource):
-    """Скачивает ВЕСЬ файл (все листы) через публичный export-эндпоинт
-    Google — без API-ключа и без OAuth, при условии, что таблица
-    доступна по ссылке ("Просмотр" для любого, у кого есть ссылка).
-
-    Специально не используется export?format=csv&gid=... — CSV не хранит
-    merged cells, а на них держится вся структура parser'а (день на 8
-    строк, потоки, блоки-заглушки на несколько групп сразу). Полный
-    xlsx-экспорт сохраняет merge один в один, поэтому gid конкретной
-    вкладки нам не нужен вообще: скачиваем книгу целиком.
-    """
-
     def __init__(self, spreadsheet_id: str, source_url: Optional[str] = None):
         self.spreadsheet_id = spreadsheet_id
         self.source_url = source_url or f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
@@ -240,7 +198,6 @@ class YandexDiskSource(ScheduleSource):
 # Произвольная прямая ссылка (fallback)
 # ---------------------------------------------------------------------------
 
-
 class HttpFileSource(ScheduleSource):
     """Любая другая прямая ссылка на xlsx-файл (напр. постоянная
     ссылка на скачивание с какого-то другого хранилища)."""
@@ -260,7 +217,6 @@ class HttpFileSource(ScheduleSource):
 # ---------------------------------------------------------------------------
 # Диспетчер: строка от пользователя -> подходящий Source
 # ---------------------------------------------------------------------------
-
 
 def resolve_source(user_input: str) -> ScheduleSource:
     """Определяет тип источника по строке (путь или ссылка любого из

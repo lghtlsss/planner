@@ -1,10 +1,4 @@
-"""
-Модели данных для распарсенного расписания.
-
-Слой моделей намеренно не зависит ни от Excel, ни от БД: это чистые
-структуры, которые описывают предметную область (Program -> Course ->
-Stream -> Group -> Day -> Time -> Lesson), как того требует ТЗ (раздел 35).
-"""
+""" Модели данных для распарсенного расписания. """
 
 from __future__ import annotations
 
@@ -12,7 +6,6 @@ from dataclasses import dataclass, field, asdict
 from datetime import date
 from enum import Enum
 from typing import Optional
-
 
 class DayOfWeek(str, Enum):
     MONDAY = "monday"
@@ -23,7 +16,6 @@ class DayOfWeek(str, Enum):
     SATURDAY = "saturday"
     SUNDAY = "sunday"
 
-
 # Сопоставление сокращений из файла с нормализованным значением.
 RAW_DAY_MAP = {
     "пн": DayOfWeek.MONDAY,
@@ -33,15 +25,21 @@ RAW_DAY_MAP = {
     "пт": DayOfWeek.FRIDAY,
     "сб": DayOfWeek.SATURDAY,
     "вс": DayOfWeek.SUNDAY,
+    # полные названия (встречаются на листах некоторых факультетов)
+    "понедельник": DayOfWeek.MONDAY,
+    "вторник": DayOfWeek.TUESDAY,
+    "среда": DayOfWeek.WEDNESDAY,
+    "четверг": DayOfWeek.THURSDAY,
+    "пятница": DayOfWeek.FRIDAY,
+    "суббота": DayOfWeek.SATURDAY,
+    "воскресенье": DayOfWeek.SUNDAY,
 }
-
 
 class DateRuleType(str, Enum):
     WHOLE_PERIOD = "whole_period"   # особых дат нет -> действует весь период расписания
     RANGE = "range"                 # 07.09.-19.10.
     LIST = "list"                   # 07.09., 21.09., 05.10.
     SINGLE = "single"               # 28.09.
-
 
 @dataclass
 class DateRule:
@@ -67,7 +65,6 @@ class DateRule:
         }
         return d
 
-
 @dataclass
 class Building:
     code: str
@@ -76,18 +73,16 @@ class Building:
     def to_dict(self) -> dict:
         return asdict(self)
 
-
 @dataclass
 class Group:
-    name: str          # напр. "26КНТ-1"
-    program: str        # напр. "Компьютерные науки и технологии"
-    faculty: str         # напр. "ИМиКН"
-    course: int          # напр. 1
-    stream_label: str    # заголовок блока в файле: "I ПОТОК" / "Специализация ..."
+    name: str
+    program: str
+    faculty: str
+    course: int
+    stream_label: str
 
     def to_dict(self) -> dict:
         return asdict(self)
-
 
 @dataclass
 class TimeOverride:
@@ -109,7 +104,6 @@ class TimeOverride:
             "end_time": self.end_time,
         }
 
-
 @dataclass
 class Lesson:
     group: str
@@ -124,6 +118,7 @@ class Lesson:
     online: bool
     dates: DateRule
     stream_group: Optional[str] = None
+    subgroup: Optional[str] = None   # "группа 1" / "гр.2" — подгруппа внутри группы
     time_overrides: list[TimeOverride] = field(default_factory=list)
     raw_text: Optional[str] = None
     source_cell: Optional[str] = None
@@ -142,22 +137,17 @@ class Lesson:
             "online": self.online,
             "dates": self.dates.to_dict(),
             "stream_group": self.stream_group,
+            "subgroup": self.subgroup,
             "time_overrides": [t.to_dict() for t in self.time_overrides],
             "raw_text": self.raw_text,
             "source_cell": self.source_cell,
         }
 
-
 @dataclass
 class ScheduleNote:
     """Заметка вместо обычного занятия — напр. блок с отсылкой к другому
     расписанию ('Занятия проводятся по расписанию дисциплины Английский
-    язык...') или к расписанию секций физкультуры.
-
-    Такие ячейки сознательно НЕ превращаются в Lesson, чтобы не придумывать
-    несуществующие subject/teacher/room — это первый класс "внешняя ссылка
-    на другое расписание", который parser обязан не терять (ТЗ, раздел 19).
-    """
+    язык...') или к расписанию секций физкультуры."""
     group: str
     day_of_week: DayOfWeek
     start_time: str
@@ -174,7 +164,6 @@ class ScheduleNote:
             "text": self.text,
             "source_cell": self.source_cell,
         }
-
 
 @dataclass
 class ScheduleMetadata:
@@ -197,13 +186,11 @@ class ScheduleMetadata:
             "sheet_name": self.sheet_name,
         }
 
-
 class WarningSeverity(str, Enum):
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"       # проблема одной ячейки, импорт можно продолжать
     CRITICAL = "critical"  # структура файла сломана, импорт нужно остановить
-
 
 @dataclass
 class ParseWarning:
@@ -219,7 +206,6 @@ class ParseWarning:
             "location": self.location,
             "raw_value": self.raw_value,
         }
-
 
 @dataclass
 class ParsedSchedule:
