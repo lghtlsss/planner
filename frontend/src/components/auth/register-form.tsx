@@ -19,10 +19,15 @@ interface RegisterFormProps {
 export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { mutate, isPending, error } = useMutation({
-    mutationFn: register,
-    onSuccess: () => router.push("/onboarding"),
+    mutationFn: (values: RegisterFormValues) =>
+      register({
+        email: values.email,
+        password: values.password,
+      }),
+    onSuccess: () => router.push("/"),
   });
 
   const {
@@ -34,7 +39,8 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
     defaultValues: {
       email: "",
       password: "",
-      confirm: "",
+
+      confirmPassword: "",
     },
   });
 
@@ -147,22 +153,40 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
           />
 
           <Controller
-            name="confirm"
+            name="confirmPassword"
             control={control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="register-confirm">Повторите пароль</FieldLabel>
+                <FieldLabel htmlFor="register-confirm-password">
+                  Повторите пароль
+                </FieldLabel>
                 <div className="relative">
                   <Input
-                    id="register-confirm"
-                    type={showPassword ? "text" : "password"}
+                    id="register-confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
                     placeholder="Ещё раз пароль"
+                    required
                     autoComplete="new-password"
                     disabled={isSubmitting || isPending}
                     className="pr-10"
                     {...field}
                     aria-invalid={fieldState.invalid}
                   />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute top-1/2 right-3 -translate-y-1/2 text-text-placeholder hover:text-text-secondary"
+                    aria-label={
+                      showConfirmPassword ? "Скрыть пароль" : "Показать пароль"
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
                 </div>
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />

@@ -31,6 +31,7 @@ export const DeadlineList = ({
             {style === "checkbox" && (
               <Input
                 type="checkbox"
+                checked={deadline.completed}
                 onChange={() => toggleChecked?.(deadline)}
                 className="size-4 shrink-0 p-0 shadow-none"
               />

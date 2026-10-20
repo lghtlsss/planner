@@ -5,3 +5,5 @@ export * from "./auth";
 export * from "./users";
 export * from "./events";
 export * from "./deadlines";
+export * from "./routines";
+export * from "./schedule";

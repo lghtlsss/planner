@@ -2,16 +2,15 @@ export type Difficulty = "easy" | "medium" | "hard" | "very_hard";
 
 export interface User {
   name: string;
-  surname: string;
+  surname?: string | null;
   email: string;
   sleepTimeHours: number | null;
   goToSleepTime: string | null;
   wakeUpTime: string | null;
+  is_profile_completed: boolean;
 }
 
 export interface RegisterRequest {
-  name: string;
-  surname: string;
   email: string;
   password: string;
 }
@@ -24,11 +23,46 @@ export interface LoginRequest {
 export interface TokenResponse {
   access_token: string;
   token_type: string;
+  user?: User;
 }
 
 export interface UpdateUserRequest {
   name?: string;
-  surname?: string;
+  surname?: string | null;
+  goToSleepTime?: string | null;
+  wakeUpTime?: string | null;
+  sleepTimeHours?: number | null;
+}
+
+export type DayOfWeek =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+
+export interface Routine {
+  id: number;
+  name: string;
+  days: DayOfWeek[];
+  start_time: string;
+  end_time: string;
+}
+
+export interface CreateRoutineRequest {
+  name: string;
+  days: DayOfWeek[];
+  start_time: string;
+  end_time: string;
+}
+
+export interface UpdateRoutineRequest {
+  name?: string;
+  days?: DayOfWeek[];
+  start_time?: string;
+  end_time?: string;
 }
 
 export interface Event {
@@ -38,6 +72,16 @@ export interface Event {
   start_time: string;
   end_time: string;
   event_date: string;
+  deadline_id: number | null;
+  comment: string | null;
+  expire_date: string | null;
+  completed: boolean;
+}
+
+export interface GetEventsParams {
+  date?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface CreateEventRequest {
@@ -46,6 +90,7 @@ export interface CreateEventRequest {
   start_time: string;
   end_time: string;
   event_date: string;
+  deadline_id?: number | null;
 }
 
 export interface UpdateEventRequest {
@@ -54,6 +99,7 @@ export interface UpdateEventRequest {
   start_time?: string;
   end_time?: string;
   event_date?: string;
+  deadline_id?: number | null;
 }
 
 export interface CreateEventResponse {
@@ -71,6 +117,8 @@ export interface Deadline {
   tag: string | null;
   comment: string | null;
   send_notification: boolean;
+  completed: boolean;
+  completed_at: string | null;
 }
 
 export interface CreateDeadlineRequest {
@@ -93,28 +141,16 @@ export interface UpdateDeadlineRequest {
   tag?: string | null;
   comment?: string | null;
   send_notification?: boolean;
+  completed?: boolean;
 }
 
 export interface MessageResponse {
   message: string;
 }
 
-// ---------- Schedule enums ----------
-
-export type DayOfWeek =
-  | "monday"
-  | "tuesday"
-  | "wednesday"
-  | "thursday"
-  | "friday"
-  | "saturday"
-  | "sunday";
-
 export type DateRuleType = "whole_period" | "range" | "list" | "single";
 
 export type WarningSeverity = "info" | "warning" | "error" | "critical";
-
-// ---------- Schedule metadata ----------
 
 export interface ScheduleMetadata {
   faculty: string;
@@ -126,19 +162,11 @@ export interface ScheduleMetadata {
   sheet_name: string;
 }
 
-// ---------- Building ----------
-
 export interface Building {
   code: string;
   address: string | null;
 }
 
-// ---------- Group metadata ----------
-
-/**
- * Внутренняя модель парсера.
- * В текущем JSON отдельным объектом не возвращается.
- */
 export interface ScheduleGroupMetadata {
   name: string;
   program: string;
@@ -146,8 +174,6 @@ export interface ScheduleGroupMetadata {
   course: number;
   stream_label: string;
 }
-
-// ---------- Date rules ----------
 
 export interface DateRule {
   type: DateRuleType;
@@ -158,15 +184,11 @@ export interface DateRule {
   raw: string | null;
 }
 
-// ---------- Time overrides ----------
-
 export interface TimeOverride {
   on_date: string;
   start_time: string;
   end_time: string;
 }
-
-// ---------- Lesson ----------
 
 export interface Lesson {
   group: string;
@@ -191,9 +213,8 @@ export interface Lesson {
 
   raw_text: string | null;
   source_cell: string | null;
+  is_changed?: boolean;
 }
-
-// ---------- Schedule notes ----------
 
 export interface ScheduleNote {
   group: string;
@@ -204,22 +225,15 @@ export interface ScheduleNote {
   source_cell: string | null;
 }
 
-/**
- * В JSON заметка находится внутри свойства note.
- */
 export interface ScheduleNoteEntry {
   note: ScheduleNote;
 }
 
 export type ScheduleEntry = Lesson | ScheduleNoteEntry;
 
-// ---------- Schedule groups and weekdays ----------
-
 export type ScheduleDay = Partial<Record<DayOfWeek, ScheduleEntry[]>>;
 
 export type ScheduleGroups = Record<string, ScheduleDay>;
-
-// ---------- Parser warnings ----------
 
 export interface ParseWarning {
   severity: WarningSeverity;
@@ -228,11 +242,6 @@ export interface ParseWarning {
   raw_value: string | null;
 }
 
-// ---------- Parsed schedule ----------
-
-/**
- * Расписание одного листа Excel / Google Sheets.
- */
 export interface ParsedSchedule {
   source: ScheduleMetadata;
   buildings: Record<string, Building>;
@@ -240,8 +249,18 @@ export interface ParsedSchedule {
   warnings: ParseWarning[];
 }
 
-/**
- * Полный результат парсера.
- * Ключ — название листа, значение — его расписание.
- */
 export type ScheduleResponse = Record<string, ParsedSchedule>;
+
+export interface UserScheduleResponse {
+  schedule: ScheduleResponse | null;
+  has_unread_changes: boolean;
+  changed_count: number;
+  source_name: string | null;
+  source_url: string | null;
+  updated_at: string | null;
+}
+
+export interface UploadScheduleByUrlRequest {
+  url: string;
+  group?: string;
+}

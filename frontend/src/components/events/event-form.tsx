@@ -1,6 +1,6 @@
 "use client";
 
-import { createEvent, CreateEventRequest } from "@/lib/api";
+import { createEvent } from "@/lib/api";
 import { EventFormValues, eventSchema } from "./schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -11,15 +11,12 @@ import { DialogClose, DialogFooter } from "../ui/dialog";
 import { DeadlineList } from "../deadlines";
 import { Button } from "../ui/button";
 
-const testCreateEvent = async (data: CreateEventRequest) => {
-  return createEvent(data);
-};
-
 interface EventFormProps {
+  eventDate?: string;
   onSuccess?: () => void;
 }
 
-export const EventForm = ({ onSuccess }: EventFormProps) => {
+export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
   const queryClient = useQueryClient();
 
   const { handleSubmit, control, setValue, clearErrors, reset } =
@@ -35,7 +32,7 @@ export const EventForm = ({ onSuccess }: EventFormProps) => {
     });
 
   const { mutate, isPending } = useMutation({
-    mutationFn: testCreateEvent,
+    mutationFn: createEvent,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["events"] });
       reset();
@@ -55,16 +52,14 @@ export const EventForm = ({ onSuccess }: EventFormProps) => {
       ? data.name!.trim()
       : data.deadline!.title;
 
-    const today = new Date().toLocaleDateString("en-CA");
-    const event_date = data.isEventOnThisDay
-      ? today
-      : (data.deadline?.expire_date?.split("T")[0] ?? today);
+    const today = eventDate ?? new Date().toLocaleDateString("en-CA");
 
     mutate({
       name,
       start_time: data.start,
       end_time: data.end,
-      event_date,
+      event_date: today,
+      deadline_id: data.isEventOnThisDay ? null : (data.deadline?.id ?? null),
     });
   };
 
@@ -98,11 +93,12 @@ export const EventForm = ({ onSuccess }: EventFormProps) => {
 
           <Button
             type="button"
-            variant="outline"
+            variant="dashed"
+            data-active={isEventOnThisDay}
             onClick={handleToggleMode}
             disabled={isPending}
           >
-            {isEventOnThisDay ? "- " : "+ "}Задача только на этот день
+            + Задача только на этот день
           </Button>
 
           {isEventOnThisDay && (
@@ -176,7 +172,7 @@ export const EventForm = ({ onSuccess }: EventFormProps) => {
         <DialogClose
           render={
             <Button type="button" variant="outline" disabled={isPending}>
-              Закрыть
+              Отмена
             </Button>
           }
         />
