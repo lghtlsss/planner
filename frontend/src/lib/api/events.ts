@@ -3,12 +3,21 @@ import type {
   CreateEventRequest,
   CreateEventResponse,
   Event,
+  GetEventsParams,
   MessageResponse,
   UpdateEventRequest,
 } from "./types";
 
-export async function getEvents(): Promise<Event[]> {
-  const response = await apiRequest<{ events: Event[] }>("/events/all");
+export async function getEvents(params?: GetEventsParams): Promise<Event[]> {
+  const searchParams = new URLSearchParams();
+  if (params?.date) searchParams.set("date", params.date);
+  if (params?.start_date) searchParams.set("start_date", params.start_date);
+  if (params?.end_date) searchParams.set("end_date", params.end_date);
+
+  const query = searchParams.toString();
+  const path = query ? `/events/all?${query}` : "/events/all";
+
+  const response = await apiRequest<{ events: Event[] }>(path);
   return response.events;
 }
 

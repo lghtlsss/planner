@@ -15,12 +15,7 @@ import {
 } from "@/components/ui/field";
 
 import { deadlineSchema, DeadlineFormValues } from "./schemas";
-import {
-  createDeadline,
-  deleteDeadline,
-  updateDeadline,
-  type Deadline,
-} from "@/lib/api";
+import { createDeadline, Deadline, updateDeadline } from "@/lib/api";
 
 function splitIsoToLocalInputs(isoString?: string | null): [string, string] {
   const d = isoString ? new Date(isoString) : new Date();
@@ -61,24 +56,14 @@ export function DeadlineForm({
   });
 
   const { mutate, isPending } = useMutation({
-    mutationFn: async (deadline: {
+    mutationFn: (payload: {
       title: string;
       expire_date: string | null;
       comment: string | null;
-    }) => {
-      if (initialDeadline) {
-        return updateDeadline(initialDeadline.id, deadline);
-      }
-      return createDeadline(deadline);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["deadlines"] });
-      onSuccess?.();
-    },
-  });
-
-  const { mutate: remove, isPending: isDeleting } = useMutation({
-    mutationFn: () => deleteDeadline(initialDeadline!.id),
+    }) =>
+      initialDeadline
+        ? updateDeadline(initialDeadline.id, payload)
+        : createDeadline(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["deadlines"] });
       onSuccess?.();
@@ -234,8 +219,8 @@ export function DeadlineForm({
         )}
         <DialogClose
           render={
-            <Button type="button" variant="outline" disabled={busy}>
-              Закрыть
+            <Button type="button" variant="outline" disabled={isPending}>
+              Отмена
             </Button>
           }
         />

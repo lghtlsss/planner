@@ -1,17 +1,38 @@
-import { setSession } from "../session";
-import { localLogin, localRegister, LOCAL_SESSION } from "./local";
-import type { LoginRequest, RegisterRequest, User } from "./types";
+import { apiRequest } from "./client";
+import { clearSession, setSession } from "../session";
+import type {
+  LoginRequest,
+  RegisterRequest,
+  TokenResponse,
+  User,
+} from "./types";
 
-export async function register(data: RegisterRequest): Promise<User> {
-  const user = localRegister(JSON.stringify({ ...data, name: data.name || "" }));
-  localStorage.setItem("planner_demo_seeded", "1");
-  localStorage.setItem("planner_onboarded", "0");
-  setSession(LOCAL_SESSION);
-  return user;
+export async function register(
+  data: RegisterRequest,
+): Promise<TokenResponse | User> {
+  const response = await apiRequest<TokenResponse | User>("/auth/register", {
+    method: "POST",
+    auth: false,
+    body: JSON.stringify(data),
+  });
+
+  if ("access_token" in response && response.access_token) {
+    setSession(response.access_token);
+  }
+
+  return response;
 }
 
 export async function login(_data: LoginRequest): Promise<string> {
   const tokens = localLogin();
   setSession(tokens.access_token);
   return tokens.access_token;
+}
+
+export function logout(): void {
+  clearSession();
+}
+
+export function logout(): void {
+  clearSession();
 }
