@@ -22,7 +22,7 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
 
   const { mutate, isPending, error } = useMutation({
     mutationFn: register,
-    onSuccess: () => router.push("/login"),
+    onSuccess: () => router.push("/onboarding"),
   });
 
   const {
@@ -32,15 +32,19 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
-      surname: "",
       email: "",
       password: "",
+      confirm: "",
     },
   });
 
   const onSubmit = (data: RegisterFormValues) => {
-    mutate(data);
+    mutate({
+      name: "",
+      surname: "",
+      email: data.email,
+      password: data.password,
+    });
   };
 
   return (
@@ -76,51 +80,6 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
         className="flex flex-col gap-5"
       >
         <FieldGroup className="gap-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Controller
-              name="name"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="register-name">Имя</FieldLabel>
-                  <Input
-                    id="register-name"
-                    type="text"
-                    placeholder="Студент"
-                    autoComplete="given-name"
-                    disabled={isSubmitting || isPending}
-                    {...field}
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-            <Controller
-              name="surname"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="register-surname">Фамилия</FieldLabel>
-                  <Input
-                    id="register-surname"
-                    type="text"
-                    placeholder="Иванов"
-                    autoComplete="family-name"
-                    disabled={isSubmitting || isPending}
-                    {...field}
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-          </div>
-
           <Controller
             name="email"
             control={control}
@@ -179,6 +138,31 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
                       <Eye className="size-4" />
                     )}
                   </button>
+                </div>
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+          />
+
+          <Controller
+            name="confirm"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="register-confirm">Повторите пароль</FieldLabel>
+                <div className="relative">
+                  <Input
+                    id="register-confirm"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Ещё раз пароль"
+                    autoComplete="new-password"
+                    disabled={isSubmitting || isPending}
+                    className="pr-10"
+                    {...field}
+                    aria-invalid={fieldState.invalid}
+                  />
                 </div>
                 {fieldState.invalid && (
                   <FieldError errors={[fieldState.error]} />

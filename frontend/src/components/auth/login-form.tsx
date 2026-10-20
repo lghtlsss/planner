@@ -58,10 +58,10 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
           <AlertCircle className="mt-0.5 size-4 shrink-0" />
           <div className="flex flex-col gap-0.5">
             <span className="text-[14px] leading-[20px] font-semibold text-text-main">
-              Не удалось войти
+              Неверная почта или пароль
             </span>
             <span className="text-caption text-text-secondary">
-              {error.message || "Попробуйте ещё раз."}
+              Проверьте данные и попробуйте ещё раз.
             </span>
           </div>
         </div>
