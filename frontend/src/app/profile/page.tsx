@@ -2,30 +2,77 @@
 
 import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Moon, Pencil, Trash2, Upload, UserRound } from "lucide-react";
+import {
+  CalendarDays,
+  Moon,
+  Pencil,
+  Trash2,
+  Upload,
+  UserRound,
+} from "lucide-react";
 import { AppShell } from "@/components/mobile/app-shell";
 import { Sheet } from "@/components/mobile/sheet";
+import { ScheduleUploadSheet } from "@/components/planner/schedule-upload-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getMe, updateMe } from "@/lib/api";
-import { getAffairs, saveAffairs } from "@/lib/extras";
-import type { Affair } from "@/lib/demo-data";
-import { clearSession } from "@/lib/session";
+import { Label } from "@/components/ui/label";
+import {
+  createRoutine,
+  deleteRoutine,
+  getMe,
+  getRoutines,
+  logout,
+  updateMe,
+  updateRoutine,
+  type DayOfWeek,
+  type Routine,
+} from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { cn } from "cn";
+
+const DAY_OPTIONS: { value: DayOfWeek; label: string }[] = [
+  { value: "monday", label: "Пн" },
+  { value: "tuesday", label: "Вт" },
+  { value: "wednesday", label: "Ср" },
+  { value: "thursday", label: "Чт" },
+  { value: "friday", label: "Пт" },
+  { value: "saturday", label: "Сб" },
+  { value: "sunday", label: "Вс" },
+];
+
+export function formatRoutineDays(days: DayOfWeek[]): string {
+  const map = Object.fromEntries(DAY_OPTIONS.map((d) => [d.value, d.label]));
+  return days.map((d) => map[d] ?? d).join(", ");
+}
 
 export default function ProfilePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const me = useQuery({ queryKey: ["me"], queryFn: getMe });
-  const [affairs, setAffairs] = useState<Affair[]>(() =>
-    typeof window === "undefined" ? [] : getAffairs(),
-  );
+  const routinesQuery = useQuery({
+    queryKey: ["routines"],
+    queryFn: getRoutines,
+  });
+
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [nameOpen, setNameOpen] = useState(false);
   const [sleepOpen, setSleepOpen] = useState(false);
-  const [affairOpen, setAffairOpen] = useState<Affair | "new" | null>(null);
+  const [routineOpen, setRoutineOpen] = useState<Routine | "new" | null>(null);
+
   const [name, setName] = useState("");
   const [sleep, setSleep] = useState({ from: "23:00", to: "07:00" });
-  const [affair, setAffair] = useState({ title: "", when: "" });
+  const [routineForm, setRoutineForm] = useState<{
+    name: string;
+    days: DayOfWeek[];
+    start_time: string;
+    end_time: string;
+  }>({
+    name: "",
+    days: [],
+    start_time: "18:00",
+    end_time: "20:00",
+  });
+  const [routineError, setRoutineError] = useState<string | null>(null);
 
   const saveUser = useMutation({
     mutationFn: updateMe,
@@ -33,6 +80,51 @@ export default function ProfilePage() {
       queryClient.setQueryData(["me"], user);
       setNameOpen(false);
       setSleepOpen(false);
+    },
+  });
+
+  const saveRoutine = useMutation({
+    mutationFn: async () => {
+      if (!routineForm.name.trim()) {
+        throw new Error("Введите название дела");
+      }
+      if (routineForm.days.length === 0) {
+        throw new Error("Выберите хотя бы один день");
+      }
+      if (
+        !routineForm.start_time ||
+        !routineForm.end_time ||
+        routineForm.start_time >= routineForm.end_time
+      ) {
+        throw new Error("Окончание должно быть позже начала");
+      }
+
+      const payload = {
+        name: routineForm.name.trim(),
+        days: routineForm.days,
+        start_time: routineForm.start_time,
+        end_time: routineForm.end_time,
+      };
+
+      if (routineOpen && routineOpen !== "new") {
+        return updateRoutine(routineOpen.id, payload);
+      }
+      return createRoutine(payload);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["routines"] });
+      setRoutineOpen(null);
+      setRoutineError(null);
+    },
+    onError: (err: Error) => {
+      setRoutineError(err.message);
+    },
+  });
+
+  const removeRoutine = useMutation({
+    mutationFn: deleteRoutine,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["routines"] });
     },
   });
 
@@ -49,103 +141,325 @@ export default function ProfilePage() {
     setSleepOpen(true);
   }
 
-  function openAffair(value: Affair | "new") {
-    setAffair(value === "new" ? { title: "", when: "" } : { title: value.title, when: value.when });
-    setAffairOpen(value);
+  function openRoutineModal(value: Routine | "new") {
+    setRoutineError(null);
+    if (value === "new") {
+      setRoutineForm({
+        name: "",
+        days: [],
+        start_time: "18:00",
+        end_time: "20:00",
+      });
+    } else {
+      setRoutineForm({
+        name: value.name,
+        days: value.days,
+        start_time: value.start_time,
+        end_time: value.end_time,
+      });
+    }
+    setRoutineOpen(value);
   }
 
-  function persistAffairs(next: Affair[]) {
-    setAffairs(next);
-    saveAffairs(next);
+  function toggleRoutineDay(day: DayOfWeek) {
+    setRoutineError(null);
+    setRoutineForm((prev) => ({
+      ...prev,
+      days: prev.days.includes(day)
+        ? prev.days.filter((d) => d !== day)
+        : [...prev.days, day],
+    }));
   }
+
+  const routines = routinesQuery.data ?? [];
 
   return (
     <AppShell>
-      <h1 className="text-h1">Профиль</h1>
-      <button type="button" className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border bg-card text-[15px] font-medium">
-        <Upload className="size-4" /> Загрузить расписание
-      </button>
-      <section className="mt-4 rounded-3xl bg-card p-4 ring-1 ring-[#E3E5EC]">
-        <h2 className="flex items-center gap-2 text-h3"><UserRound className="size-5 text-primary" /> Личные данные</h2>
-        <Row label="Имя" required value={me.data?.name || "Не указано"} onEdit={openName} />
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-h1">Профиль</h1>
+        <Button variant="outline" onClick={() => setUploadOpen(true)}>
+          <Upload className="size-4" /> Загрузить расписание
+        </Button>
+      </div>
+
+      <section className="mt-4 rounded-3xl bg-card p-4 ring-1 ring-border">
+        <h2 className="flex items-center gap-2 text-h3">
+          <UserRound className="size-5 text-primary" /> Личные данные
+        </h2>
+        <Row
+          label="Имя"
+          required
+          value={me.data?.name || "Не указано"}
+          onEdit={openName}
+        />
         <Row
           label="Сон"
-          value={me.data?.goToSleepTime ? `${me.data.goToSleepTime} – ${me.data.wakeUpTime}` : "Не указан"}
+          value={
+            me.data?.goToSleepTime
+              ? `${me.data.goToSleepTime} – ${me.data.wakeUpTime}`
+              : "Не указан"
+          }
           onEdit={openSleep}
           icon={<Moon className="size-4" />}
         />
       </section>
-      <section className="mt-4 rounded-3xl bg-card p-4 ring-1 ring-[#E3E5EC]">
+
+      <section className="mt-4 rounded-3xl bg-card p-4 ring-1 ring-border">
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-h3"><CalendarDays className="size-5 text-primary" /> Другие дела</h2>
-          <button type="button" className="rounded-xl border px-3 py-1.5 text-[13px]" onClick={() => openAffair("new")}>+ Добавить дело</button>
+          <div>
+            <h2 className="flex items-center gap-2 text-h3">
+              <CalendarDays className="size-5 text-primary" /> Другие дела
+            </h2>
+            <p className="text-caption text-text-secondary">
+              Повторяются каждую неделю
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => openRoutineModal("new")}
+          >
+            + Добавить дело
+          </Button>
         </div>
-        {affairs.length === 0 && (
-          <p className="py-6 text-center text-caption text-text-secondary">Пока нет постоянных дел</p>
+
+        {routines.length === 0 ? (
+          <p className="py-6 text-center text-caption text-text-secondary">
+            Пока нет постоянных дел
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {routines.map((item) => (
+              <li key={item.id} className="border-l-4 border-delo-bar pl-3">
+                <p className="font-semibold text-text-main">{item.name}</p>
+                <p className="text-caption text-text-secondary">
+                  {formatRoutineDays(item.days)} · {item.start_time.slice(0, 5)}–
+                  {item.end_time.slice(0, 5)}
+                </p>
+                <div className="mt-1.5 flex gap-3 text-[13px]">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 font-medium text-primary hover:underline"
+                    onClick={() => openRoutineModal(item)}
+                  >
+                    <Pencil className="size-3.5" /> Редактировать
+                  </button>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 font-medium text-danger hover:underline"
+                    disabled={removeRoutine.isPending}
+                    onClick={() => removeRoutine.mutate(item.id)}
+                  >
+                    <Trash2 className="size-3.5" /> Удалить
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
-        <ul className="mt-3 space-y-3">
-          {affairs.map((item) => (
-            <li key={item.id} className="border-l-4 border-[#8A90A2] pl-3">
-              <p className="font-semibold">{item.title}</p>
-              <p className="text-caption text-text-secondary">{item.when}</p>
-              <div className="mt-1 flex gap-4 text-[14px]">
-                <button type="button" className="flex items-center gap-1 text-primary" onClick={() => openAffair(item)}><Pencil className="size-3.5" /> Редактировать</button>
-                <button type="button" className="flex items-center gap-1 text-[#D23B3B]" onClick={() => persistAffairs(affairs.filter((entry) => entry.id !== item.id))}><Trash2 className="size-3.5" /> Удалить</button>
-              </div>
-            </li>
-          ))}
-        </ul>
       </section>
-      <p className="mt-3 text-caption text-[#D23B3B]">* обязательное поле</p>
-      <Button variant="outline" className="mt-4 h-11 w-full" onClick={() => { clearSession(); router.replace("/login"); }}>
+
+      <p className="mt-3 text-caption text-danger">* обязательное поле</p>
+      <Button
+        variant="outline"
+        className="mt-4 h-11 w-full"
+        onClick={() => {
+          logout();
+          router.replace("/login");
+        }}
+      >
         Выйти
       </Button>
 
       <Sheet open={nameOpen} title="Имя" onClose={() => setNameOpen(false)}>
-        <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Как к вам обращаться" />
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="profile-name">
+            Имя <span className="text-danger">*</span>
+          </Label>
+          <Input
+            id="profile-name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Как к вам обращаться"
+          />
+        </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <Button variant="outline" className="h-11" onClick={() => setNameOpen(false)}>Отмена</Button>
-          <Button className="h-11" onClick={() => saveUser.mutate({ name })}>Сохранить</Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setNameOpen(false)}
+          >
+            Отмена
+          </Button>
+          <Button
+            size="lg"
+            disabled={saveUser.isPending || !name.trim()}
+            onClick={() => saveUser.mutate({ name: name.trim() })}
+          >
+            Сохранить
+          </Button>
         </div>
       </Sheet>
-      <Sheet open={sleepOpen} title="Сон" subtitle="В это время задачи не планируются автоматически" onClose={() => setSleepOpen(false)}>
+
+      <Sheet
+        open={sleepOpen}
+        title="Сон"
+        subtitle="В это время задачи не планируются автоматически"
+        onClose={() => setSleepOpen(false)}
+      >
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-label">Отбой
-            <Input className="mt-1" type="time" value={sleep.from} onChange={(event) => setSleep({ ...sleep, from: event.target.value })} />
-          </label>
-          <label className="text-label">Подъём
-            <Input className="mt-1" type="time" value={sleep.to} onChange={(event) => setSleep({ ...sleep, to: event.target.value })} />
-          </label>
+          <div className="flex flex-col gap-1.5">
+            <Label>Отбой</Label>
+            <Input
+              type="time"
+              value={sleep.from}
+              onChange={(event) =>
+                setSleep({ ...sleep, from: event.target.value })
+              }
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Подъём</Label>
+            <Input
+              type="time"
+              value={sleep.to}
+              onChange={(event) =>
+                setSleep({ ...sleep, to: event.target.value })
+              }
+            />
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <Button variant="outline" className="h-11" onClick={() => setSleepOpen(false)}>Отмена</Button>
-          <Button className="h-11" onClick={() => {
-            const raw = localStorage.getItem("planner_local_user");
-            const user = raw ? JSON.parse(raw) : {};
-            localStorage.setItem("planner_local_user", JSON.stringify({ ...user, goToSleepTime: sleep.from, wakeUpTime: sleep.to }));
-            void queryClient.invalidateQueries({ queryKey: ["me"] });
-            setSleepOpen(false);
-          }}>Сохранить</Button>
-        </div>
-      </Sheet>
-      <Sheet open={affairOpen != null} title={affairOpen === "new" ? "Новое дело" : "Редактирование дела"} onClose={() => setAffairOpen(null)}>
-        <label className="text-label">Название</label>
-        <Input className="mt-1" value={affair.title} onChange={(event) => setAffair({ ...affair, title: event.target.value })} placeholder="Секция, кружок, работа" />
-        <label className="mt-3 block text-label">Когда</label>
-        <Input className="mt-1" value={affair.when} onChange={(event) => setAffair({ ...affair, when: event.target.value })} placeholder="Вт, Чт · 18:00–20:00" />
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <Button variant="outline" className="h-11" onClick={() => setAffairOpen(null)}>Отмена</Button>
-          <Button className="h-11" onClick={() => {
-            if (!affair.title.trim()) return;
-            if (affairOpen && affairOpen !== "new") {
-              persistAffairs(affairs.map((item) => item.id === affairOpen.id ? { ...item, ...affair } : item));
-            } else {
-              persistAffairs([...affairs, { id: Date.now(), title: affair.title.trim(), when: affair.when.trim() }]);
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setSleepOpen(false)}
+          >
+            Отмена
+          </Button>
+          <Button
+            size="lg"
+            disabled={saveUser.isPending}
+            onClick={() =>
+              saveUser.mutate({
+                goToSleepTime: sleep.from,
+                wakeUpTime: sleep.to,
+              })
             }
-            setAffairOpen(null);
-          }}>Сохранить</Button>
+          >
+            Сохранить
+          </Button>
         </div>
       </Sheet>
+
+      <Sheet
+        open={routineOpen != null}
+        title={routineOpen === "new" ? "Новое дело" : "Редактирование дела"}
+        subtitle="Дело будет повторяться каждую неделю"
+        onClose={() => setRoutineOpen(null)}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="routine-name">
+              Название <span className="text-danger">*</span>
+            </Label>
+            <Input
+              id="routine-name"
+              value={routineForm.name}
+              onChange={(event) =>
+                setRoutineForm({ ...routineForm, name: event.target.value })
+              }
+              placeholder="Например, секция"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>
+              Дни недели <span className="text-danger">*</span>
+            </Label>
+            <div className="grid grid-cols-7 gap-1.5">
+              {DAY_OPTIONS.map((day) => {
+                const selected = routineForm.days.includes(day.value);
+                return (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() => toggleRoutineDay(day.value)}
+                    className={cn(
+                      "flex h-9 items-center justify-center rounded-lg border text-[13px] font-medium transition-colors",
+                      selected
+                        ? "border-brand-primary bg-brand-primary text-white"
+                        : "border-border-subtle bg-surface text-text-main hover:bg-bg-page",
+                    )}
+                  >
+                    {day.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>
+                Начало <span className="text-danger">*</span>
+              </Label>
+              <Input
+                type="time"
+                value={routineForm.start_time}
+                onChange={(event) =>
+                  setRoutineForm({
+                    ...routineForm,
+                    start_time: event.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>
+                Окончание <span className="text-danger">*</span>
+              </Label>
+              <Input
+                type="time"
+                value={routineForm.end_time}
+                onChange={(event) =>
+                  setRoutineForm({
+                    ...routineForm,
+                    end_time: event.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          {routineError && (
+            <p className="text-caption text-danger">{routineError}</p>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setRoutineOpen(null)}
+            >
+              Отмена
+            </Button>
+            <Button
+              size="lg"
+              disabled={saveRoutine.isPending}
+              onClick={() => saveRoutine.mutate()}
+            >
+              Сохранить
+            </Button>
+          </div>
+        </div>
+      </Sheet>
+
+      <ScheduleUploadSheet
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+      />
     </AppShell>
   );
 }
@@ -166,12 +480,14 @@ function Row({
   return (
     <div className="mt-4 flex items-center justify-between gap-3">
       <div>
-        <p className="flex items-center gap-2 text-caption text-text-secondary">{icon} {label} {required && <span className="text-[#E5484D]">*</span>}</p>
-        <p className="text-[16px]">{value}</p>
+        <p className="flex items-center gap-2 text-caption text-text-secondary">
+          {icon} {label} {required && <span className="text-danger">*</span>}
+        </p>
+        <p className="text-[16px] text-text-main">{value}</p>
       </div>
-      <button type="button" onClick={onEdit} className="flex h-9 items-center gap-1 rounded-xl border px-3 text-[13px] text-primary">
+      <Button type="button" variant="outline" size="sm" onClick={onEdit}>
         <Pencil className="size-3.5" /> Ред.
-      </button>
+      </Button>
     </div>
   );
 }

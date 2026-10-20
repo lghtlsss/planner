@@ -70,8 +70,6 @@ export function DeadlineForm({
     },
   });
 
-  const busy = isPending || isDeleting;
-
   const hasDeadline = useWatch({ control, name: "hasDeadline" });
 
   function onSubmit(data: DeadlineFormValues) {
@@ -106,7 +104,7 @@ export function DeadlineForm({
               <Input
                 id="title"
                 type="text"
-                disabled={busy}
+                disabled={isPending}
                 aria-invalid={fieldState.invalid}
                 {...field}
               />
@@ -127,7 +125,7 @@ export function DeadlineForm({
                 id="hasDeadline"
                 type="checkbox"
                 className="size-4 shrink-0 p-0 shadow-none"
-                disabled={busy}
+                disabled={isPending}
                 checked={value}
                 onChange={(e) => {
                   const checked = e.target.checked;
@@ -153,7 +151,7 @@ export function DeadlineForm({
                   <Input
                     id="date"
                     type="date"
-                    disabled={busy}
+                    disabled={isPending}
                     aria-invalid={fieldState.invalid}
                     {...field}
                   />
@@ -172,7 +170,7 @@ export function DeadlineForm({
                   <Input
                     id="time"
                     type="time"
-                    disabled={busy}
+                    disabled={isPending}
                     aria-invalid={fieldState.invalid}
                     {...field}
                   />
@@ -194,7 +192,7 @@ export function DeadlineForm({
               <Input
                 id="comment"
                 type="text"
-                disabled={busy}
+                disabled={isPending}
                 aria-invalid={fieldState.invalid}
                 {...field}
               />
@@ -205,18 +203,6 @@ export function DeadlineForm({
       </FieldGroup>
 
       <DialogFooter>
-        {initialDeadline && (
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={busy}
-            onClick={() => {
-              if (confirm("Удалить это задание?")) remove();
-            }}
-          >
-            Удалить
-          </Button>
-        )}
         <DialogClose
           render={
             <Button type="button" variant="outline" disabled={isPending}>
@@ -224,7 +210,7 @@ export function DeadlineForm({
             </Button>
           }
         />
-        <Button type="submit" disabled={busy}>
+        <Button type="submit" disabled={isPending}>
           Сохранить
         </Button>
       </DialogFooter>

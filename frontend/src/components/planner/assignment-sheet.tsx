@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { format, isValid, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Sheet } from "@/components/mobile/sheet";
 import {
   createDeadline,
@@ -14,10 +18,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 function split(iso?: string | null) {
   if (!iso) return { date: "", time: "" };
-  const value = new Date(iso);
-  const date = `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
-  const time = `${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
-  return { date, time };
+  const parsed = parseISO(iso);
+  const value = isValid(parsed) ? parsed : new Date(iso);
+  if (!isValid(value)) return { date: "", time: "" };
+  return {
+    date: format(value, "yyyy-MM-dd"),
+    time: format(value, "HH:mm"),
+  };
 }
 
 export function AssignmentSheet({
@@ -32,17 +39,26 @@ export function AssignmentSheet({
   const queryClient = useQueryClient();
   const initial = split(deadline?.expire_date);
   const [title, setTitle] = useState(deadline?.title ?? "");
-  const [noDate, setNoDate] = useState(deadline ? deadline.expire_date == null : false);
+  const [noDate, setNoDate] = useState(
+    deadline ? deadline.expire_date == null : false,
+  );
   const [date, setDate] = useState(initial.date);
-  const [time, setTime] = useState(initial.time === "23:59" ? "" : initial.time);
+  const [time, setTime] = useState(
+    initial.time === "23:59" ? "" : initial.time,
+  );
   const [comment, setComment] = useState(deadline?.comment ?? "");
   const [error, setError] = useState("");
 
   const save = useMutation({
     mutationFn: async () => {
       if (!title.trim()) throw new Error("Введите название задания");
-      if (!noDate && !date) throw new Error("Укажите дату или отметьте «Без дедлайна»");
-      const expire_date = noDate || !date ? null : new Date(`${date}T${time || "23:59"}`).toISOString();
+      if (!noDate && !date) {
+        throw new Error("Укажите дату или отметьте «Без дедлайна»");
+      }
+      const expire_date =
+        noDate || !date
+          ? null
+          : new Date(`${date}T${time || "23:59"}`).toISOString();
       const payload = {
         title: title.trim(),
         expire_date,
@@ -70,58 +86,91 @@ export function AssignmentSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title={deadline ? "Редактирование" : "Новое задание"}
+      title={deadline ? "Редактирование задания" : "Новое задание"}
     >
-      <div className="rounded-3xl bg-white p-4 ring-1 ring-[#E3E5EC]">
-        <label className="text-label">
-          Название <span className="text-[#E5484D]">*</span>
-        </label>
-        <Input
-          className="mt-2"
-          placeholder="Например, реферат по истории"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-        />
-        {error && <p className="mt-1 text-[13px] text-[#D23B3B]">{error}</p>}
-        <div className="mt-4 flex items-center justify-between">
-          <span className="text-label">Дедлайн</span>
-          <label className="flex items-center gap-2 text-[14px]">
-            <input
-              type="checkbox"
-              checked={noDate}
-              onChange={(event) => setNoDate(event.target.checked)}
-            />
-            Без дедлайна
-          </label>
+      <div className="flex flex-col gap-4 rounded-3xl bg-card p-4 ring-1 ring-border">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="assignment-title">
+            Название <span className="text-danger">*</span>
+          </Label>
+          <Input
+            id="assignment-title"
+            placeholder="Например, реферат по истории"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            aria-invalid={Boolean(error)}
+          />
+          {error && <p className="text-caption text-danger">{error}</p>}
         </div>
-        {!noDate && (
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
-            <Input type="time" value={time} onChange={(event) => setTime(event.target.value)} />
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <Label>Дедлайн</Label>
+            <Label className="cursor-pointer font-normal text-text-secondary">
+              <Checkbox
+                checked={noDate}
+                onCheckedChange={(checked) => setNoDate(Boolean(checked))}
+              />
+              Без дедлайна
+            </Label>
           </div>
-        )}
-        <label className="mt-4 block text-label">Комментарий (по желанию)</label>
-        <textarea
-          value={comment}
-          maxLength={300}
-          onChange={(event) => setComment(event.target.value)}
-          placeholder="Заметка для себя"
-          className="mt-2 h-28 w-full rounded-[10px] border border-[#E3E5EC] p-3 text-[15px] outline-none"
-        />
-        <p className="text-right text-[12px] text-text-secondary">{comment.length} / 300</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Button type="button" variant="outline" className="h-11" onClick={onClose}>
+          {!noDate ? (
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+              />
+              <Input
+                type="time"
+                value={time}
+                onChange={(event) => setTime(event.target.value)}
+              />
+            </div>
+          ) : (
+            <p className="text-caption text-text-secondary">
+              Бессрочное задание: даты и цветового флажка не будет
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="assignment-comment">Комментарий (по желанию)</Label>
+          <Textarea
+            id="assignment-comment"
+            value={comment}
+            maxCount={300}
+            onChange={(event) => setComment(event.target.value)}
+            placeholder="Заметка для себя"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={onClose}
+          >
             Отмена
           </Button>
-          <Button type="button" className="h-11" disabled={save.isPending} onClick={() => save.mutate()}>
+          <Button
+            type="button"
+            size="lg"
+            disabled={save.isPending}
+            onClick={() => save.mutate()}
+          >
             Сохранить
           </Button>
         </div>
+
         {deadline && (
           <Button
             type="button"
             variant="destructive"
-            className="mt-2 h-11 w-full"
+            size="lg"
+            className="w-full"
+            disabled={remove.isPending}
             onClick={() => remove.mutate()}
           >
             Удалить
