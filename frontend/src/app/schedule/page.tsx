@@ -1,47 +1,129 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { BookOpen, ChevronLeft, ChevronRight, Upload } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  BookOpen,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  Upload,
+} from "lucide-react";
 import { AppShell } from "@/components/mobile/app-shell";
-import { Sheet } from "@/components/mobile/sheet";
+import { ScheduleUploadSheet } from "@/components/planner/schedule-upload-sheet";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getEvents } from "@/lib/api";
-import { addDays, eventOnDay, isoDate, startOfWeek } from "@/lib/urgency";
+import {
+  getSchedule,
+  markScheduleChangesSeen,
+  type DayOfWeek,
+  type Lesson,
+  type ScheduleEntry,
+  type ScheduleResponse,
+} from "@/lib/api";
+import { addDays, formatWeekRange, isoDate, startOfWeek } from "@/lib/urgency";
 import { cn } from "cn";
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+const DAY_KEYS: DayOfWeek[] = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+function isLesson(entry: ScheduleEntry): entry is Lesson {
+  return !("note" in entry);
+}
+
+function extractLessonsForDay(
+  schedule: ScheduleResponse | null | undefined,
+  dayKey: DayOfWeek,
+): Lesson[] {
+  if (!schedule) return [];
+  const result: Lesson[] = [];
+  for (const sheet of Object.values(schedule)) {
+    const firstGroup = Object.values(sheet.groups ?? {})[0];
+    if (!firstGroup) continue;
+    const entries = firstGroup[dayKey] ?? [];
+    for (const entry of entries) {
+      if (isLesson(entry) && entry.subject) {
+        result.push(entry);
+      }
+    }
+  }
+  return result.sort((a, b) => a.start_time.localeCompare(b.start_time));
+}
 
 export default function SchedulePage() {
+  const queryClient = useQueryClient();
   const [week, setWeek] = useState(() => startOfWeek(new Date()));
-  const [selected, setSelected] = useState(() => new Date());
-  const [upload, setUpload] = useState(false);
-  const [fileName, setFileName] = useState("");
-  const events = useQuery({ queryKey: ["events"], queryFn: getEvents });
-  const days = useMemo(() => Array.from({ length: 6 }, (_, index) => addDays(week, index)), [week]);
-  const pairs = (events.data ?? [])
-    .filter((event) => eventOnDay(event.event_date, selected))
-    .sort((a, b) => a.start_time.localeCompare(b.start_time));
-  const loaded = (events.data ?? []).length > 0;
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [changedBannerCount, setChangedBannerCount] = useState<number | null>(
+    null,
+  );
+
+  const scheduleQuery = useQuery({
+    queryKey: ["schedule"],
+    queryFn: getSchedule,
+  });
+
+  const markSeenMutation = useMutation({
+    mutationFn: markScheduleChangesSeen,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["schedule"] });
+    },
+  });
+
+  useEffect(() => {
+    if (scheduleQuery.data?.has_unread_changes) {
+      if (scheduleQuery.data.changed_count > 0) {
+        setChangedBannerCount(scheduleQuery.data.changed_count);
+      }
+      markSeenMutation.mutate();
+    }
+  }, [scheduleQuery.data?.has_unread_changes, scheduleQuery.data?.changed_count]);
+
+  const days = useMemo(
+    () => Array.from({ length: 6 }, (_, index) => addDays(week, index)),
+    [week],
+  );
+
+  const selectedDayKey = DAY_KEYS[selectedIndex] ?? "monday";
+  const pairs = useMemo(
+    () => extractLessonsForDay(scheduleQuery.data?.schedule, selectedDayKey),
+    [scheduleQuery.data?.schedule, selectedDayKey],
+  );
+
+  const loaded = Boolean(
+    scheduleQuery.data?.schedule &&
+      Object.keys(scheduleQuery.data.schedule).length > 0,
+  );
 
   return (
     <AppShell>
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-h1">Пары</h1>
-        <button type="button" onClick={() => setUpload(true)} className="flex h-11 items-center gap-2 rounded-2xl border bg-card px-3 text-[14px] font-medium">
+        <Button variant="outline" onClick={() => setUploadOpen(true)}>
           <Upload className="size-4" /> Загрузить расписание
-        </button>
+        </Button>
       </div>
+
       {!loaded ? (
-        <div className="mt-4 rounded-3xl bg-card px-5 py-8 text-center ring-1 ring-[#E3E5EC]">
-          <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#EEF0FD] text-primary">
+        <div className="mt-4 rounded-3xl bg-card px-5 py-8 text-center ring-1 ring-border">
+          <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-brand-primary-light text-primary">
             <BookOpen />
           </span>
           <h2 className="mt-4 text-h3">Расписание ещё не загружено</h2>
           <p className="mt-2 text-caption text-text-secondary">
-            Загрузите Excel-файл из личного кабинета или вставьте ссылку на таблицу — пары появятся здесь и в «Моих планах».
+            Загрузите Excel-файл из личного кабинета или вставьте ссылку на
+            таблицу — пары появятся здесь и в «Моих планах».
           </p>
-          <Button className="mt-4 h-11" onClick={() => setUpload(true)}>
+          <Button className="mt-4 h-11" onClick={() => setUploadOpen(true)}>
             <Upload /> Загрузить расписание
           </Button>
         </div>
@@ -49,59 +131,126 @@ export default function SchedulePage() {
         <>
           <div className="mt-4 flex items-center justify-between">
             <div className="flex gap-2">
-              <button type="button" className="flex size-9 items-center justify-center rounded-xl bg-card ring-1 ring-[#E3E5EC]" onClick={() => setWeek(addDays(week, -7))}><ChevronLeft className="size-4" /></button>
-              <button type="button" className="flex size-9 items-center justify-center rounded-xl bg-card ring-1 ring-[#E3E5EC]" onClick={() => setWeek(addDays(week, 7))}><ChevronRight className="size-4" /></button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setWeek(addDays(week, -7))}
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setWeek(addDays(week, 7))}
+              >
+                <ChevronRight className="size-4" />
+              </Button>
             </div>
-            <p className="text-[14px] font-semibold">
-              {week.getDate()} {week.toLocaleDateString("ru-RU", { month: "long" })} – {addDays(week, 5).getDate()} {addDays(week, 5).toLocaleDateString("ru-RU", { month: "long" })}
+            <p className="text-[14px] font-semibold text-text-main">
+              {formatWeekRange(week, addDays(week, 5))}
             </p>
           </div>
+
           <div className="mt-3 grid grid-cols-6 gap-2">
             {days.map((day, index) => {
-              const active = isoDate(day) === isoDate(selected);
+              const active = index === selectedIndex;
               return (
-                <button key={isoDate(day)} type="button" onClick={() => setSelected(day)} className={cn("rounded-2xl py-2 text-center", active ? "bg-primary text-white" : "bg-card ring-1 ring-[#E3E5EC]")}>
-                  <div className="text-[11px]">{WEEKDAYS[index]}</div>
-                  <div className="text-[16px] font-semibold">{day.getDate()}</div>
+                <button
+                  key={isoDate(day)}
+                  type="button"
+                  onClick={() => setSelectedIndex(index)}
+                  className={cn(
+                    "rounded-2xl py-2 text-center transition-colors",
+                    active
+                      ? "bg-primary text-white"
+                      : "bg-card text-text-main ring-1 ring-border",
+                  )}
+                >
+                  <div className="text-[11px] opacity-80">{WEEKDAYS[index]}</div>
+                  <div className="text-[16px] font-semibold">
+                    {day.getDate()}
+                  </div>
                 </button>
               );
             })}
           </div>
+
           <div className="mt-4 space-y-3">
-            {pairs.length === 0 && <p className="text-text-secondary">В этот день пар нет</p>}
-            {pairs.map((event) => (
-              <article key={event.id} className="flex gap-3">
-                <div className="w-12 text-[13px] text-text-secondary">
-                  <div>{event.start_time.slice(0, 5)}</div>
-                  <div>{event.end_time.slice(0, 5)}</div>
-                </div>
-                <div className="flex-1 border-l-4 border-[#5B6EE1] bg-[#E4E9FF] px-3 py-2">
-                  <p className="font-semibold">{event.name}</p>
-                  {event.description && <p className="text-[13px] text-text-secondary">{event.description}</p>}
-                </div>
-              </article>
-            ))}
+            {pairs.length === 0 && (
+              <p className="text-text-secondary">В этот день пар нет</p>
+            )}
+            {pairs.map((lesson, idx) => {
+              const location = [
+                lesson.building ? `к. ${lesson.building}` : null,
+                lesson.room ? `ауд. ${lesson.room}` : null,
+              ]
+                .filter(Boolean)
+                .join(", ");
+
+              return (
+                <article
+                  key={`${lesson.start_time}_${lesson.subject}_${idx}`}
+                  className="flex gap-3"
+                >
+                  <div className="w-12 text-[13px] text-text-secondary">
+                    <div className="font-semibold text-text-main">
+                      {lesson.start_time.slice(0, 5)}
+                    </div>
+                    <div>{lesson.end_time.slice(0, 5)}</div>
+                  </div>
+                  <div
+                    className={cn(
+                      "flex-1 rounded-r-xl border-l-4 px-3 py-2.5",
+                      lesson.is_changed
+                        ? "border-deadline-red bg-deadline-red-bg/50"
+                        : "border-para-bar bg-para-bg",
+                    )}
+                  >
+                    <p className="font-semibold text-text-main">
+                      {lesson.subject}
+                    </p>
+                    {location && (
+                      <p className="mt-0.5 flex items-center gap-1 text-[13px] text-text-secondary">
+                        <MapPin className="size-3.5 shrink-0" />
+                        <span>{location}</span>
+                      </p>
+                    )}
+                    <div className="mt-1.5 flex items-center gap-2">
+                      {lesson.lesson_type && (
+                        <span className="text-caption text-text-secondary">
+                          {lesson.lesson_type}
+                        </span>
+                      )}
+                      {lesson.is_changed && (
+                        <Badge variant="changed">Изменено</Badge>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </>
       )}
-      <Sheet open={upload} title="Загрузка расписания" onClose={() => setUpload(false)}>
-        <p className="text-label">Файл Excel</p>
-        <label className="mt-2 flex cursor-pointer flex-col items-center rounded-2xl border border-dashed border-[#CDD1DC] px-4 py-8 text-center">
-          <Upload className="size-6 text-primary" />
-          <span className="mt-2 text-[15px]">Перетащите файл или нажмите, чтобы выбрать</span>
-          <span className="text-caption text-text-secondary">Формат .xlsx, до 10 МБ</span>
-          <input
-            type="file"
-            accept=".xlsx"
-            className="sr-only"
-            onChange={(event) => setFileName(event.target.files?.[0]?.name ?? "")}
-          />
-        </label>
-        {fileName && <p className="mt-3 text-[14px]">Выбран файл: {fileName}</p>}
-        <p className="mt-4 text-caption text-text-secondary">
-          Разбор Excel-таблицы живёт в бэкенде. Здесь можно выбрать файл, но пары из него пока не подставляются.
-        </p>
-      </Sheet>
+
+      {changedBannerCount != null && changedBannerCount > 0 && (
+        <div className="fixed right-4 bottom-20 left-4 z-40 mx-auto flex max-w-md items-center gap-2.5 rounded-2xl bg-text-main px-4 py-3 text-white shadow-lg">
+          <CheckCircle2 className="size-5 shrink-0 text-deadline-green" />
+          <span className="text-[14px] font-medium">
+            Расписание обновлено: изменились {changedBannerCount} пары
+          </span>
+        </div>
+      )}
+
+      <ScheduleUploadSheet
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onUploaded={(count) => {
+          if (count > 0) setChangedBannerCount(count);
+        }}
+      />
     </AppShell>
   );
 }

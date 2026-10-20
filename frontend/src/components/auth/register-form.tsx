@@ -27,7 +27,7 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
         email: values.email,
         password: values.password,
       }),
-    onSuccess: () => router.push("/"),
+    onSuccess: () => router.push("/onboarding"),
   });
 
   const {
@@ -39,18 +39,12 @@ export const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
     defaultValues: {
       email: "",
       password: "",
-
       confirmPassword: "",
     },
   });
 
   const onSubmit = (data: RegisterFormValues) => {
-    mutate({
-      name: "",
-      surname: "",
-      email: data.email,
-      password: data.password,
-    });
+    mutate(data);
   };
 
   return (

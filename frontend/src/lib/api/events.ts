@@ -8,11 +8,18 @@ import type {
   UpdateEventRequest,
 } from "./types";
 
-export async function getEvents(params?: GetEventsParams): Promise<Event[]> {
+function isGetEventsParams(value: unknown): value is GetEventsParams {
+  if (!value || typeof value !== "object") return false;
+  return !("queryKey" in value);
+}
+
+export async function getEvents(params?: GetEventsParams | unknown): Promise<Event[]> {
   const searchParams = new URLSearchParams();
-  if (params?.date) searchParams.set("date", params.date);
-  if (params?.start_date) searchParams.set("start_date", params.start_date);
-  if (params?.end_date) searchParams.set("end_date", params.end_date);
+  if (isGetEventsParams(params)) {
+    if (params.date) searchParams.set("date", params.date);
+    if (params.start_date) searchParams.set("start_date", params.start_date);
+    if (params.end_date) searchParams.set("end_date", params.end_date);
+  }
 
   const query = searchParams.toString();
   const path = query ? `/events/all?${query}` : "/events/all";

@@ -18,19 +18,29 @@ export async function register(
 
   if ("access_token" in response && response.access_token) {
     setSession(response.access_token);
+  } else {
+    await login({ email: data.email, password: data.password });
   }
 
   return response;
 }
 
-export async function login(_data: LoginRequest): Promise<string> {
-  const tokens = localLogin();
-  setSession(tokens.access_token);
-  return tokens.access_token;
-}
+export async function login(data: LoginRequest): Promise<string> {
+  const form = new URLSearchParams({
+    username: data.email,
+    password: data.password,
+  });
 
-export function logout(): void {
-  clearSession();
+  const tokens = await apiRequest<TokenResponse>("/auth/login", {
+    method: "POST",
+    auth: false,
+    body: form,
+  });
+
+  const session: string = tokens.access_token;
+
+  setSession(session);
+  return session;
 }
 
 export function logout(): void {

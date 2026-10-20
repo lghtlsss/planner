@@ -2,19 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { BookOpen, CalendarDays, Home, List, UserRound } from "lucide-react";
+import { getSchedule } from "@/lib/api";
 import { cn } from "cn";
-
-const tabs = [
-  { href: "/", label: "Главная", icon: Home },
-  { href: "/plans", label: "Мои планы", icon: CalendarDays },
-  { href: "/assignments", label: "Все задания", icon: List },
-  { href: "/schedule", label: "Пары", icon: BookOpen, dot: true },
-  { href: "/profile", label: "Профиль", icon: UserRound },
-];
 
 export function TabBar() {
   const pathname = usePathname();
+  const schedule = useQuery({
+    queryKey: ["schedule"],
+    queryFn: getSchedule,
+  });
+
+  const tabs = [
+    { href: "/", label: "Главная", icon: Home, dot: false },
+    { href: "/plans", label: "Мои планы", icon: CalendarDays, dot: false },
+    { href: "/assignments", label: "Все задания", icon: List, dot: false },
+    {
+      href: "/schedule",
+      label: "Пары",
+      icon: BookOpen,
+      dot: Boolean(schedule.data?.has_unread_changes),
+    },
+    { href: "/profile", label: "Профиль", icon: UserRound, dot: false },
+  ];
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
@@ -33,9 +44,12 @@ export function TabBar() {
                 )}
               >
                 <span className="relative">
-                  <Icon className="size-[22px]" strokeWidth={active ? 2.25 : 1.75} />
+                  <Icon
+                    className="size-[22px]"
+                    strokeWidth={active ? 2.25 : 1.75}
+                  />
                   {tab.dot && (
-                    <span className="absolute -top-0.5 -right-1 size-2 rounded-full bg-[#E5484D]" />
+                    <span className="absolute -top-0.5 -right-1 size-2 rounded-full bg-notify-dot" />
                   )}
                 </span>
                 {tab.label}

@@ -1,10 +1,28 @@
+import {
+  addDays as dfAddDays,
+  differenceInCalendarDays,
+  format,
+  isSameDay as dfIsSameDay,
+  isValid,
+  parseISO,
+  startOfWeek as dfStartOfWeek,
+} from "date-fns";
+import { ru } from "date-fns/locale";
+
 export type TrafficLevel = "red" | "yellow" | "green" | "none";
 
-export function daysUntil(iso: string | null | undefined) {
+function toDate(iso: string | null | undefined): Date | null {
   if (!iso) return null;
-  const due = new Date(iso).getTime();
-  if (Number.isNaN(due)) return null;
-  return Math.ceil((due - Date.now()) / 86_400_000);
+  const parsed = parseISO(iso);
+  if (isValid(parsed)) return parsed;
+  const fallback = new Date(iso);
+  return isValid(fallback) ? fallback : null;
+}
+
+export function daysUntil(iso: string | null | undefined): number | null {
+  const due = toDate(iso);
+  if (!due) return null;
+  return differenceInCalendarDays(due, new Date());
 }
 
 export function trafficLevel(iso: string | null | undefined): TrafficLevel {
@@ -15,7 +33,7 @@ export function trafficLevel(iso: string | null | undefined): TrafficLevel {
   return "green";
 }
 
-export function trafficLabel(iso: string | null | undefined) {
+export function trafficLabel(iso: string | null | undefined): string {
   const days = daysUntil(iso);
   if (days === null) return "без срока";
   if (days < 0) return "просрочено";
@@ -23,108 +41,71 @@ export function trafficLabel(iso: string | null | undefined) {
   return `${days} дн.`;
 }
 
-export function formatDue(iso: string | null | undefined) {
-  if (!iso) return "без срока";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "без срока";
-  return date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+export function formatDue(iso: string | null | undefined): string {
+  const date = toDate(iso);
+  if (!date) return "без срока";
+  return format(date, "d MMM", { locale: ru }).replace(".", "");
 }
 
-export function formatTime(iso: string) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+export function formatTime(iso: string): string {
+  const date = toDate(iso);
+  if (!date) return "";
+  return format(date, "HH:mm", { locale: ru });
 }
 
-export function isSameDay(iso: string, day: Date) {
-  const date = new Date(iso);
-  return (
-    date.getFullYear() === day.getFullYear() &&
-    date.getMonth() === day.getMonth() &&
-    date.getDate() === day.getDate()
-  );
+export function isSameDay(iso: string, day: Date): boolean {
+  const date = toDate(iso);
+  if (!date) return false;
+  return dfIsSameDay(date, day);
 }
 
-export function greetingForNow() {
+export function greetingForNow(): string {
   const hour = new Date().getHours();
   if (hour < 12) return "Доброе утро";
   if (hour < 18) return "Добрый день";
   return "Добрый вечер";
 }
 
-export function eventOnDay(eventDate: string, day: Date) {
-  if (eventDate.length <= 10) {
-    const [year, month, date] = eventDate.split("-").map(Number);
-    return (
-      year === day.getFullYear() &&
-      month === day.getMonth() + 1 &&
-      date === day.getDate()
-    );
-  }
+export function eventOnDay(eventDate: string, day: Date): boolean {
   return isSameDay(eventDate, day);
 }
 
-export function eventClock(value: string) {
+export function eventClock(value: string): string {
   if (value.includes("T")) return formatTime(value);
   return value.slice(0, 5);
 }
 
-const MONTHS = [
-  "янв",
-  "фев",
-  "мар",
-  "апр",
-  "мая",
-  "июн",
-  "июл",
-  "авг",
-  "сен",
-  "окт",
-  "ноя",
-  "дек",
-];
-
-export function todayLabel() {
-  return new Date().toLocaleDateString("ru-RU", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+export function todayLabel(): string {
+  return format(new Date(), "EEEE, d MMMM", { locale: ru });
 }
 
-export function pillDate(iso: string | null | undefined) {
-  if (!iso) return "";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+export function pillDate(iso: string | null | undefined): string {
+  const date = toDate(iso);
+  if (!date) return "";
+  return format(date, "d MMM", { locale: ru }).replace(".", "");
 }
 
-export function dayTitle(day: Date) {
-  const label = day.toLocaleDateString("ru-RU", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+export function dayTitle(day: Date): string {
+  const label = format(day, "EEEE, d MMMM", { locale: ru });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-export function startOfWeek(day: Date) {
-  const copy = new Date(day);
-  const shift = (copy.getDay() + 6) % 7;
-  copy.setDate(copy.getDate() - shift);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
+export function formatWeekRange(start: Date, end: Date): string {
+  const sameMonth = start.getMonth() === end.getMonth();
+  if (sameMonth) {
+    return `${format(start, "d", { locale: ru })} – ${format(end, "d MMMM", { locale: ru })}`;
+  }
+  return `${format(start, "d MMMM", { locale: ru })} – ${format(end, "d MMMM", { locale: ru })}`;
 }
 
-export function addDays(day: Date, amount: number) {
-  const copy = new Date(day);
-  copy.setDate(copy.getDate() + amount);
-  return copy;
+export function startOfWeek(day: Date): Date {
+  return dfStartOfWeek(day, { weekStartsOn: 1 });
 }
 
-export function isoDate(day: Date) {
-  const year = day.getFullYear();
-  const month = String(day.getMonth() + 1).padStart(2, "0");
-  const date = String(day.getDate()).padStart(2, "0");
-  return `${year}-${month}-${date}`;
+export function addDays(day: Date, amount: number): Date {
+  return dfAddDays(day, amount);
+}
+
+export function isoDate(day: Date): string {
+  return format(day, "yyyy-MM-dd");
 }

@@ -1,5 +1,7 @@
 export type Difficulty = "easy" | "medium" | "hard" | "very_hard";
 
+// ---------- Auth & User ----------
+
 export interface User {
   name: string;
   surname?: string | null;
@@ -7,12 +9,14 @@ export interface User {
   sleepTimeHours: number | null;
   goToSleepTime: string | null;
   wakeUpTime: string | null;
-  is_profile_completed: boolean;
+  is_profile_completed?: boolean;
 }
 
 export interface RegisterRequest {
   email: string;
   password: string;
+  name?: string;
+  surname?: string;
 }
 
 export interface LoginRequest {
@@ -33,6 +37,8 @@ export interface UpdateUserRequest {
   wakeUpTime?: string | null;
   sleepTimeHours?: number | null;
 }
+
+// ---------- Routines (/routines) ----------
 
 export type DayOfWeek =
   | "monday"
@@ -65,6 +71,8 @@ export interface UpdateRoutineRequest {
   end_time?: string;
 }
 
+// ---------- Events (/events) ----------
+
 export interface Event {
   id: number;
   name: string;
@@ -72,10 +80,10 @@ export interface Event {
   start_time: string;
   end_time: string;
   event_date: string;
-  deadline_id: number | null;
-  comment: string | null;
-  expire_date: string | null;
-  completed: boolean;
+  deadline_id?: number | null;
+  comment?: string | null;
+  expire_date?: string | null;
+  completed?: boolean;
 }
 
 export interface GetEventsParams {
@@ -107,6 +115,8 @@ export interface CreateEventResponse {
   intersection: boolean;
 }
 
+// ---------- Deadlines (/deadlines) ----------
+
 export interface Deadline {
   id: number;
   title: string;
@@ -117,8 +127,8 @@ export interface Deadline {
   tag: string | null;
   comment: string | null;
   send_notification: boolean;
-  completed: boolean;
-  completed_at: string | null;
+  completed?: boolean;
+  completed_at?: string | null;
 }
 
 export interface CreateDeadlineRequest {
@@ -147,6 +157,8 @@ export interface UpdateDeadlineRequest {
 export interface MessageResponse {
   message: string;
 }
+
+// ---------- Schedule (/schedule) ----------
 
 export type DateRuleType = "whole_period" | "range" | "list" | "single";
 
