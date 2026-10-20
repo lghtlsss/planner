@@ -44,7 +44,14 @@ function nextId(kind: "deadline" | "event") {
 }
 
 function defaultUser(): User {
-  return { name: "Студент", surname: "", email: "dev@local" };
+  return {
+    name: "Студент",
+    surname: "",
+    email: "dev@local",
+    sleepTimeHours: null,
+    goToSleepTime: null,
+    wakeUpTime: null,
+  };
 }
 
 function parseBody(body: BodyInit | null | undefined): Record<string, unknown> {
@@ -75,6 +82,9 @@ export function localRegister(body: BodyInit | null | undefined): User {
     name: String(data.name ?? "Студент"),
     surname: String(data.surname ?? ""),
     email: String(data.email || "dev@local"),
+    sleepTimeHours: null,
+    goToSleepTime: null,
+    wakeUpTime: null,
   };
   writeJson(USER_KEY, user);
   return user;
@@ -94,7 +104,7 @@ export function handleLocalRequest<T>(
     return localRegister(options.body) as T;
   }
   if (pathname === "/users/me" && method === "GET") {
-    return readJson<User>(USER_KEY, defaultUser()) as T;
+    return { ...defaultUser(), ...readJson<Partial<User>>(USER_KEY, {}) } as T;
   }
   if (pathname === "/users/me" && method === "PATCH") {
     const current = readJson<User>(USER_KEY, defaultUser());
@@ -129,7 +139,7 @@ export function handleLocalRequest<T>(
     return deadline as T;
   }
   if (pathname === "/deadlines/create" && method === "POST") {
-    const data = parseBody(options.body) as CreateDeadlineRequest;
+    const data = parseBody(options.body) as unknown as CreateDeadlineRequest;
     const deadline: Deadline = {
       id: nextId("deadline"),
       title: data.title,
@@ -169,7 +179,7 @@ export function handleLocalRequest<T>(
     return { events: readJson<Event[]>(EVENTS_KEY, []) } as T;
   }
   if (pathname.startsWith("/events/new") && method === "POST") {
-    const data = parseBody(options.body) as CreateEventRequest;
+    const data = parseBody(options.body) as unknown as CreateEventRequest;
     const event: Event = {
       id: nextId("event"),
       name: data.name,
