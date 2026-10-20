@@ -16,7 +16,7 @@ export function GuestShell({ children }: { children: ReactNode }) {
   if (session) return null;
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-6 px-4 py-8">
+    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-8 px-5 pt-14 pb-10">
       <BrandMark />
       {children}
     </div>

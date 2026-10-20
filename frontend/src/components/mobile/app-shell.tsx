@@ -3,28 +3,17 @@
 import type { ReactNode } from "react";
 import { AuthGate } from "./auth-gate";
 import { TabBar } from "./tab-bar";
+import { ensureDemoData } from "@/lib/demo-data";
 
-export function AppShell({
-  children,
-  title,
-  action,
-}: {
-  children: ReactNode;
-  title?: string;
-  action?: ReactNode;
-}) {
+export function AppShell({ children }: { children: ReactNode }) {
+  if (typeof window !== "undefined") ensureDemoData();
+
   return (
     <AuthGate>
-      <div className="mx-auto min-h-dvh w-full max-w-lg pb-24">
-        {(title || action) && (
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b bg-background/90 px-4 py-3 backdrop-blur">
-            <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-            {action}
-          </header>
-        )}
-        <main className="px-4 py-4">{children}</main>
-        <TabBar />
+      <div className="mx-auto min-h-dvh w-full max-w-lg px-4 pt-5 pb-28">
+        {children}
       </div>
+      <TabBar />
     </AuthGate>
   );
 }
