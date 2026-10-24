@@ -1,6 +1,6 @@
 "use client";
 
-import { createEvent } from "@/lib/api";
+import { createEvent, type Event } from "@/lib/api";
 import { EventFormValues, eventSchema } from "./schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -10,6 +10,7 @@ import { Input } from "../ui/input";
 import { DialogClose, DialogFooter } from "../ui/dialog";
 import { DeadlineList } from "../deadlines";
 import { Button } from "../ui/button";
+import { isoDate } from "@/lib/urgency";
 
 interface EventFormProps {
   eventDate?: string;
@@ -31,10 +32,15 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
       },
     });
 
-  const { mutate, isPending } = useMutation({
+  const { mutate, isPending, error } = useMutation({
     mutationFn: createEvent,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["events"] });
+    onSuccess: async (res) => {
+      queryClient.setQueryData<Event[]>(["events"], (old) => {
+        if (!old) return [res.event];
+        if (old.some((item) => item.id === res.event.id)) return old;
+        return [...old, res.event];
+      });
+      await queryClient.invalidateQueries({ queryKey: ["events"] });
       reset();
       onSuccess?.();
     },
@@ -52,13 +58,13 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
       ? data.name!.trim()
       : data.deadline!.title;
 
-    const today = eventDate ?? new Date().toLocaleDateString("en-CA");
+    const targetDate = eventDate ?? isoDate(new Date());
 
     mutate({
       name,
       start_time: data.start,
       end_time: data.end,
-      event_date: today,
+      event_date: targetDate,
       deadline_id: data.isEventOnThisDay ? null : (data.deadline?.id ?? null),
     });
   };
@@ -78,6 +84,7 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
               control={control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid} className="w-full">
+                  <FieldLabel>Из списка заданий</FieldLabel>
                   <DeadlineList
                     style="radio"
                     selectedId={field.value?.id}
@@ -94,6 +101,7 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
           <Button
             type="button"
             variant="dashed"
+            className="w-full"
             data-active={isEventOnThisDay}
             onClick={handleToggleMode}
             disabled={isPending}
@@ -108,15 +116,19 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid} className="w-full">
                   <FieldLabel htmlFor="name">
-                    Название разовой задачи
+                    Название разовой задачи <span className="text-danger">*</span>
                   </FieldLabel>
                   <Input
                     id="name"
                     type="text"
+                    placeholder="Например, психологический тест"
                     disabled={isPending}
                     aria-invalid={fieldState.invalid}
                     {...field}
                   />
+                  <p className="text-caption text-text-secondary">
+                    Не попадает в списки заданий
+                  </p>
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
@@ -126,13 +138,15 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <Controller
             name="start"
             control={control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="start">Начало</FieldLabel>
+                <FieldLabel htmlFor="start">
+                  Начало <span className="text-danger">*</span>
+                </FieldLabel>
                 <Input
                   id="start"
                   type="time"
@@ -151,7 +165,9 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
             control={control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="end">Окончание</FieldLabel>
+                <FieldLabel htmlFor="end">
+                  Окончание <span className="text-danger">*</span>
+                </FieldLabel>
                 <Input
                   id="end"
                   type="time"
@@ -168,6 +184,10 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
         </div>
       </FieldGroup>
 
+      {error instanceof Error && (
+        <p className="text-caption text-danger">{error.message}</p>
+      )}
+
       <DialogFooter>
         <DialogClose
           render={
@@ -177,7 +197,7 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
           }
         />
         <Button type="submit" disabled={isPending}>
-          Добавить
+          {isPending ? "Добавление..." : "Добавить"}
         </Button>
       </DialogFooter>
     </form>

@@ -44,8 +44,8 @@ export function createEvent(
 export function updateEvent(
   eventId: number,
   data: UpdateEventRequest,
-): Promise<Event> {
-  return apiRequest<Event>(`/events/update/${eventId}`, {
+): Promise<CreateEventResponse> {
+  return apiRequest<CreateEventResponse>(`/events/update/${eventId}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });

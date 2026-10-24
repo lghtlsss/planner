@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
   CheckCircle2,
@@ -15,93 +15,59 @@ import { ScheduleUploadSheet } from "@/components/planner/schedule-upload-sheet"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  getSchedule,
-  markScheduleChangesSeen,
-  type DayOfWeek,
-  type Lesson,
-  type ScheduleEntry,
-  type ScheduleResponse,
+  getMe,
+  getScheduleForUser,
+  type LessonOut,
 } from "@/lib/api";
 import { addDays, formatWeekRange, isoDate, startOfWeek } from "@/lib/urgency";
 import { cn } from "cn";
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-const DAY_KEYS: DayOfWeek[] = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-];
-
-function isLesson(entry: ScheduleEntry): entry is Lesson {
-  return !("note" in entry);
-}
-
-function extractLessonsForDay(
-  schedule: ScheduleResponse | null | undefined,
-  dayKey: DayOfWeek,
-): Lesson[] {
-  if (!schedule) return [];
-  const result: Lesson[] = [];
-  for (const sheet of Object.values(schedule)) {
-    const firstGroup = Object.values(sheet.groups ?? {})[0];
-    if (!firstGroup) continue;
-    const entries = firstGroup[dayKey] ?? [];
-    for (const entry of entries) {
-      if (isLesson(entry) && entry.subject) {
-        result.push(entry);
-      }
-    }
-  }
-  return result.sort((a, b) => a.start_time.localeCompare(b.start_time));
-}
 
 export default function SchedulePage() {
-  const queryClient = useQueryClient();
   const [week, setWeek] = useState(() => startOfWeek(new Date()));
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [changedBannerCount, setChangedBannerCount] = useState<number | null>(
-    null,
-  );
+  const [uploadedMessage, setUploadedMessage] = useState<string | null>(null);
+
+  const meQuery = useQuery({
+    queryKey: ["me"],
+    queryFn: getMe,
+  });
+
+  const dateFrom = useMemo(() => isoDate(week), [week]);
+  const dateTo = useMemo(() => isoDate(addDays(week, 5)), [week]);
+  const groupId = meQuery.data?.group_id ?? null;
+  const hasGroup = groupId != null;
 
   const scheduleQuery = useQuery({
-    queryKey: ["schedule"],
-    queryFn: getSchedule,
+    queryKey: ["schedule", groupId, dateFrom, dateTo],
+    queryFn: () =>
+      getScheduleForUser(meQuery.data, {
+        date_from: dateFrom,
+        date_to: dateTo,
+      }),
+    enabled: hasGroup,
   });
-
-  const markSeenMutation = useMutation({
-    mutationFn: markScheduleChangesSeen,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["schedule"] });
-    },
-  });
-
-  useEffect(() => {
-    if (scheduleQuery.data?.has_unread_changes) {
-      if (scheduleQuery.data.changed_count > 0) {
-        setChangedBannerCount(scheduleQuery.data.changed_count);
-      }
-      markSeenMutation.mutate();
-    }
-  }, [scheduleQuery.data?.has_unread_changes, scheduleQuery.data?.changed_count]);
 
   const days = useMemo(
     () => Array.from({ length: 6 }, (_, index) => addDays(week, index)),
     [week],
   );
 
-  const selectedDayKey = DAY_KEYS[selectedIndex] ?? "monday";
-  const pairs = useMemo(
-    () => extractLessonsForDay(scheduleQuery.data?.schedule, selectedDayKey),
-    [scheduleQuery.data?.schedule, selectedDayKey],
-  );
+  const selectedDateIso = isoDate(days[selectedIndex] ?? days[0]);
+  const pairs: LessonOut[] = useMemo(() => {
+    const dayObj = scheduleQuery.data?.days.find(
+      (d) => d.date === selectedDateIso,
+    );
+    if (!dayObj) return [];
+    return [...dayObj.lessons]
+      .filter((lesson) => Boolean(lesson.subject))
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+  }, [scheduleQuery.data, selectedDateIso]);
 
   const loaded = Boolean(
-    scheduleQuery.data?.schedule &&
-      Object.keys(scheduleQuery.data.schedule).length > 0,
+    hasGroup && scheduleQuery.data && scheduleQuery.data.days.length > 0,
   );
 
   return (
@@ -120,8 +86,9 @@ export default function SchedulePage() {
           </span>
           <h2 className="mt-4 text-h3">Расписание ещё не загружено</h2>
           <p className="mt-2 text-caption text-text-secondary">
-            Загрузите Excel-файл из личного кабинета или вставьте ссылку на
-            таблицу — пары появятся здесь и в «Моих планах».
+            {!hasGroup
+              ? "Выберите вашу учебную группу в профиле и загрузите ссылку на таблицу — пары появятся здесь и в «Моих планах»."
+              : "Загрузите Excel-файл из личного кабинета или вставьте ссылку на таблицу — пары появятся здесь и в «Моих планах»."}
           </p>
           <Button className="mt-4 h-11" onClick={() => setUploadOpen(true)}>
             <Upload /> Загрузить расписание
@@ -235,20 +202,20 @@ export default function SchedulePage() {
         </>
       )}
 
-      {changedBannerCount != null && changedBannerCount > 0 && (
+      {uploadedMessage && (
         <div className="fixed right-4 bottom-20 left-4 z-40 mx-auto flex max-w-md items-center gap-2.5 rounded-2xl bg-text-main px-4 py-3 text-white shadow-lg">
           <CheckCircle2 className="size-5 shrink-0 text-deadline-green" />
-          <span className="text-[14px] font-medium">
-            Расписание обновлено: изменились {changedBannerCount} пары
-          </span>
+          <span className="text-[14px] font-medium">{uploadedMessage}</span>
         </div>
       )}
 
       <ScheduleUploadSheet
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
-        onUploaded={(count) => {
-          if (count > 0) setChangedBannerCount(count);
+        onUploaded={(res) => {
+          setUploadedMessage(
+            res.message || "Расписание успешно обновлено",
+          );
         }}
       />
     </AppShell>

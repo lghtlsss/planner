@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,6 +8,7 @@ import {
   CalendarDays,
   Clock3,
   Infinity as InfinityIcon,
+  MessageSquare,
   Plus,
 } from "lucide-react";
 import { AppShell } from "@/components/mobile/app-shell";
@@ -16,23 +17,78 @@ import { DeadlineItem } from "@/components/planner/deadline-item";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   getDeadlines,
   getEvents,
   getMe,
+  getRoutines,
+  getScheduleForUser,
   updateDeadline,
+  type DayOfWeek,
   type Deadline,
   type Event,
 } from "@/lib/api";
-import { dayTitle, eventClock, eventOnDay, greetingForNow, pillDate } from "@/lib/urgency";
+import {
+  dayTitle,
+  eventClock,
+  eventOnDay,
+  greetingForNow,
+  isoDate,
+  pillDate,
+} from "@/lib/urgency";
+
+const JS_DAY_TO_KEY: DayOfWeek[] = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+interface TodayTimelineItem {
+  key: string;
+  kind: "para" | "task" | "delo";
+  start_time: string;
+  end_time: string;
+  title: string;
+  subtitle?: string | null;
+  comment?: string | null;
+}
 
 export default function HomePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [sheet, setSheet] = useState<Deadline | null | "new">(null);
 
+  const [today] = useState(() => new Date());
+  const todayIso = useMemo(() => isoDate(today), [today]);
+  const todayWeekday = JS_DAY_TO_KEY[today.getDay()];
+
   const me = useQuery({ queryKey: ["me"], queryFn: getMe });
   const events = useQuery({ queryKey: ["events"], queryFn: getEvents });
-  const deadlines = useQuery({ queryKey: ["deadlines"], queryFn: getDeadlines });
+  const deadlines = useQuery({
+    queryKey: ["deadlines"],
+    queryFn: getDeadlines,
+  });
+  const routines = useQuery({ queryKey: ["routines"], queryFn: getRoutines });
+
+  const groupId = me.data?.group_id ?? null;
+
+  const schedule = useQuery({
+    queryKey: ["schedule", groupId, todayIso, todayIso],
+    queryFn: () =>
+      getScheduleForUser(me.data, {
+        date_from: todayIso,
+        date_to: todayIso,
+      }),
+    enabled: groupId != null,
+  });
 
   const toggleDeadlineMutation = useMutation({
     mutationFn: (deadline: Deadline) =>
@@ -46,17 +102,68 @@ export default function HomePage() {
     if (
       me.isSuccess &&
       me.data &&
-      me.data.is_profile_completed === false &&
-      !me.data.name?.trim()
+      (me.data.is_profile_completed === false ||
+        !me.data.name?.trim() ||
+        me.data.group_id == null)
     ) {
       router.replace("/onboarding");
     }
   }, [me.isSuccess, me.data, router]);
 
-  const today = new Date();
-  const todayEvents = (events.data ?? []).filter((event: Event) =>
-    eventOnDay(event.event_date, today),
-  );
+  const timelineItems = useMemo<TodayTimelineItem[]>(() => {
+    const items: TodayTimelineItem[] = [];
+
+    const todaySchedule = schedule.data?.days.find((d) => d.date === todayIso);
+    for (const [idx, lesson] of (todaySchedule?.lessons ?? []).entries()) {
+      if (!lesson.subject) continue;
+      const location = [
+        lesson.building ? `к. ${lesson.building}` : null,
+        lesson.room ? `ауд. ${lesson.room}` : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      items.push({
+        key: `para-${idx}-${lesson.start_time}`,
+        kind: "para",
+        start_time: eventClock(lesson.start_time),
+        end_time: eventClock(lesson.end_time),
+        title: lesson.subject,
+        subtitle: location || lesson.lesson_type || null,
+      });
+    }
+
+    for (const event of (events.data ?? []).filter((e: Event) =>
+      eventOnDay(e.event_date, today),
+    )) {
+      items.push({
+        key: `event-${event.id}`,
+        kind: "task",
+        start_time: eventClock(event.start_time),
+        end_time: eventClock(event.end_time),
+        title: event.name,
+        subtitle: event.expire_date
+          ? `Дедлайн ${pillDate(event.expire_date)}`
+          : event.description || null,
+        comment: event.comment ?? null,
+      });
+    }
+
+    for (const routine of (routines.data ?? []).filter((r) =>
+      r.days.includes(todayWeekday),
+    )) {
+      items.push({
+        key: `routine-${routine.id}`,
+        kind: "delo",
+        start_time: eventClock(routine.start_time),
+        end_time: eventClock(routine.end_time),
+        title: routine.name,
+        subtitle: "Постоянное дело",
+      });
+    }
+
+    return items.sort((a, b) => a.start_time.localeCompare(b.start_time));
+  }, [schedule.data, events.data, routines.data, today, todayIso, todayWeekday]);
+
   const dated = (deadlines.data ?? []).filter((item) => item.expire_date);
   const open = (deadlines.data ?? []).filter((item) => !item.expire_date);
 
@@ -77,10 +184,10 @@ export default function HomePage() {
             <CalendarDays className="size-5 text-primary" /> Задачи на сегодня
           </h2>
           <span className="text-caption text-text-secondary">
-            {todayEvents.length} событий
+            {timelineItems.length} событий
           </span>
         </div>
-        {todayEvents.length === 0 ? (
+        {timelineItems.length === 0 ? (
           <Empty
             title="На сегодня ничего не запланировано"
             text="Добавьте задачу на день в «Моих планах» — она появится здесь."
@@ -95,36 +202,74 @@ export default function HomePage() {
           />
         ) : (
           <ul className="space-y-3">
-            {todayEvents.map((event) => {
-              const isTask = event.deadline_id != null;
-              return (
-                <li key={event.id} className="flex gap-3">
-                  <div className="w-12 text-[13px] leading-5 text-text-secondary">
-                    <div>{eventClock(event.start_time)}</div>
-                    <div>{eventClock(event.end_time)}</div>
+            {timelineItems.map((item) => (
+              <li key={item.key} className="flex gap-3">
+                <div className="w-12 text-[13px] leading-5 text-text-secondary">
+                  <div className="font-semibold text-text-main">
+                    {item.start_time}
                   </div>
-                  <div
-                    className={
-                      isTask
-                        ? "min-w-0 flex-1 border-l-4 border-task-bar bg-task-bg px-3 py-2"
+                  <div>{item.end_time}</div>
+                </div>
+                <div
+                  className={
+                    item.kind === "task"
+                      ? "min-w-0 flex-1 border-l-4 border-task-bar bg-task-bg px-3 py-2"
+                      : item.kind === "delo"
+                        ? "min-w-0 flex-1 border-l-4 border-delo-bar bg-delo-bg px-3 py-2"
                         : "min-w-0 flex-1 border-l-4 border-para-bar bg-para-bg px-3 py-2"
-                    }
-                  >
-                    <p className="font-semibold text-text-main">{event.name}</p>
-                    <div className="mt-0.5 flex items-center gap-2 text-[13px] text-text-secondary">
-                      <Badge variant={isTask ? "task" : "para"}>
-                        {isTask ? "Задача" : "Пара"}
-                      </Badge>
-                      {event.expire_date ? (
-                        <span>Дедлайн {pillDate(event.expire_date)}</span>
-                      ) : (
-                        event.description && <span>{event.description}</span>
-                      )}
-                    </div>
+                  }
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-semibold text-text-main">{item.title}</p>
+                    {item.kind === "task" && item.comment && (
+                      <Popover>
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="icon-sm"
+                              aria-label="Комментарий"
+                            />
+                          }
+                        >
+                          <MessageSquare className="size-4" />
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="end"
+                          className="w-64 rounded-xl bg-text-main p-3 text-white shadow-lg"
+                        >
+                          <p className="text-[12px] text-white/70">
+                            Комментарий
+                          </p>
+                          <p className="text-[13px] leading-[18px]">
+                            {item.comment}
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    )}
                   </div>
-                </li>
-              );
-            })}
+                  <div className="mt-0.5 flex items-center gap-2 text-[13px] text-text-secondary">
+                    <Badge
+                      variant={
+                        item.kind === "task"
+                          ? "task"
+                          : item.kind === "delo"
+                            ? "delo"
+                            : "para"
+                      }
+                    >
+                      {item.kind === "task"
+                        ? "Задача"
+                        : item.kind === "delo"
+                          ? "Дело"
+                          : "Пара"}
+                    </Badge>
+                    {item.subtitle && <span>{item.subtitle}</span>}
+                  </div>
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </section>
