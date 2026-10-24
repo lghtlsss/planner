@@ -22,19 +22,19 @@ class Task(Base):
         nullable=True)  # в минутах
     actual_duration: Mapped[int | None] = mapped_column(nullable=True, default=None)  # в минутах
 
-    start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    start_time: Mapped[time | None] = mapped_column(Time, nullable=False)
 
-    potential_end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    potential_end_time: Mapped[time | None] = mapped_column(Time, nullable=False)
 
     task_date: Mapped[date | None] = mapped_column(
         Date,
-        nullable=True)
+        nullable=False)
 
-    creation_time: Mapped[datetime] = mapped_column(DateTime(timezone=True),
-                                                    default=lambda: datetime.now(timezone.utc),
-                                                    nullable=False)
-
-    deadline_id: Mapped[int] = mapped_column(ForeignKey("deadlines.id"), nullable=False, unique=True)
+    deadline_id: Mapped[int] = mapped_column(
+        ForeignKey("deadlines.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True
+    )
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
