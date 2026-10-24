@@ -10,8 +10,8 @@ class SDeadlineCreate(BaseModel):
     repeat: bool = False
     difficulty: Difficulty | None = None
     tag: str | None = None
-    comment: str | None = None
     send_notification: bool = False
+    comment: str | None = None
 
 
 class SDeadlineResponse(BaseModel):
@@ -22,8 +22,10 @@ class SDeadlineResponse(BaseModel):
     repeat: bool
     difficulty: Difficulty | None
     tag: str | None
-    comment: str | None
     send_notification: bool
+    comment: str | None
+    completed: bool
+    completed_at: datetime | None
 
 
 class SDeadlineListResponse(BaseModel):
@@ -37,5 +39,7 @@ class SDeadlineUpdate(BaseModel):
     repeat: bool | None = None
     difficulty: Difficulty | None = None
     tag: str | None = None
-    comment: str | None = None
     send_notification: bool | None = None
+    comment: str | None = None
+    completed: bool | None = None
+    completed_at: datetime | None = None
