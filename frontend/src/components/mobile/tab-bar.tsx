@@ -49,7 +49,7 @@ export function TabBar() {
               >
                 <span className="relative">
                   <Icon
-                    className="size-[22px]"
+                    className="size-5.5"
                     strokeWidth={active ? 2.25 : 1.75}
                   />
                   {tab.dot && (

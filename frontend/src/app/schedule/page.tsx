@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
@@ -35,8 +35,8 @@ export default function SchedulePage() {
     queryFn: getMe,
   });
 
-  const dateFrom = useMemo(() => isoDate(week), [week]);
-  const dateTo = useMemo(() => isoDate(addDays(week, 5)), [week]);
+  const dateFrom = isoDate(week);
+  const dateTo = isoDate(addDays(week, 5));
   const groupId = meQuery.data?.group_id ?? null;
   const hasGroup = groupId != null;
 
@@ -50,21 +50,17 @@ export default function SchedulePage() {
     enabled: hasGroup,
   });
 
-  const days = useMemo(
-    () => Array.from({ length: 6 }, (_, index) => addDays(week, index)),
-    [week],
-  );
+  const days = Array.from({ length: 6 }, (_, index) => addDays(week, index));
 
   const selectedDateIso = isoDate(days[selectedIndex] ?? days[0]);
-  const pairs: LessonOut[] = useMemo(() => {
-    const dayObj = scheduleQuery.data?.days.find(
-      (d) => d.date === selectedDateIso,
-    );
-    if (!dayObj) return [];
-    return [...dayObj.lessons]
-      .filter((lesson) => Boolean(lesson.subject))
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
-  }, [scheduleQuery.data, selectedDateIso]);
+  const dayObj = scheduleQuery.data?.days.find(
+    (d) => d.date === selectedDateIso,
+  );
+  const pairs: LessonOut[] = dayObj
+    ? [...dayObj.lessons]
+        .filter((lesson) => Boolean(lesson.subject))
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))
+    : [];
 
   const loaded = Boolean(
     hasGroup && scheduleQuery.data && scheduleQuery.data.days.length > 0,
