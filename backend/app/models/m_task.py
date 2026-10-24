@@ -2,11 +2,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, ForeignKey, DateTime, Date, Time
 from datetime import datetime, timezone, date, time
 from app.database import Base
+from app.models import Deadline
 
 
 class Task(Base):
     """Задачи, добавляющиеся на день из дедлайнов."""
-    # TODO: доделать именно логику добавления из дедлайна
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
@@ -33,6 +33,8 @@ class Task(Base):
     creation_time: Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                     default=lambda: datetime.now(timezone.utc),
                                                     nullable=False)
+
+    deadline_id: Mapped[int] = mapped_column(ForeignKey("deadlines.id"), nullable=False, unique=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
