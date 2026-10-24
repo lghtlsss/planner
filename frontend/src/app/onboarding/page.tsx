@@ -14,10 +14,11 @@ import {
 import { AppShell } from "@/components/mobile/app-shell";
 import { Sheet } from "@/components/mobile/sheet";
 import { ScheduleUploadSheet } from "@/components/planner/schedule-upload-sheet";
+import { OpenRoutineFormButton, RoutineList } from "@/components/routines";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getGroups, getMe, getRoutines, updateMe } from "@/lib/api";
+import { getGroups, getMe, updateMe } from "@/lib/api";
 import { cn } from "cn";
 
 export default function OnboardingPage() {
@@ -28,7 +29,6 @@ export default function OnboardingPage() {
     queryKey: ["groups"],
     queryFn: () => getGroups({ limit: 2000 }),
   });
-  const routines = useQuery({ queryKey: ["routines"], queryFn: getRoutines });
 
   const [name, setName] = useState("");
   const [groupId, setGroupId] = useState("");
@@ -165,33 +165,19 @@ export default function OnboardingPage() {
         </div>
       </section>
 
-      <section className="mt-4 rounded-3xl bg-card p-4 text-center ring-1 ring-border">
-        <div className="flex items-center justify-between text-left">
-          <h2 className="flex items-center gap-2 text-h3">
-            <CalendarDays className="size-5 text-primary" /> Другие дела
-          </h2>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/profile")}
-          >
-            + Добавить дело
-          </Button>
-        </div>
-        {(routines.data ?? []).length === 0 ? (
-          <>
-            <p className="mt-6 text-h3">Пока нет постоянных дел</p>
-            <p className="mt-1 text-caption text-text-secondary">
-              Секция, работа, кружок — всё, что повторяется каждую неделю. Эти
-              дела появятся в расписании дня.
+      <section className="mt-4 rounded-3xl bg-card p-4 ring-1 ring-border">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-h3">
+              <CalendarDays className="size-5 text-primary" /> Другие дела
+            </h2>
+            <p className="text-caption text-text-secondary">
+              Повторяются каждую неделю
             </p>
-          </>
-        ) : (
-          <p className="mt-4 text-caption text-text-secondary">
-            Добавлено постоянных дел: {(routines.data ?? []).length}
-          </p>
-        )}
+          </div>
+          <OpenRoutineFormButton />
+        </div>
+        <RoutineList emptyVariant="onboarding" />
       </section>
 
       <p className="mt-3 text-caption text-danger">* обязательное поле</p>

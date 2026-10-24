@@ -55,7 +55,6 @@ export function formatTime(iso: string): string {
 
 export function isSameDay(iso: string, day: Date): boolean {
   if (!iso) return false;
-  // Если передана дата формата YYYY-MM-DD (например, event_date), сравниваем напрямую без сдвига часовых поясов
   if (/^\d{4}-\d{2}-\d{2}$/.test(iso.trim())) {
     return iso.trim() === format(day, "yyyy-MM-dd");
   }

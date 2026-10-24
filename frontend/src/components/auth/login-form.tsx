@@ -42,7 +42,7 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[380px] flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-95 flex-col gap-6">
       <div className="flex flex-col gap-1.5">
         <h1 className="text-h1 text-text-main">Вход</h1>
         <p className="text-body text-text-secondary">
@@ -57,7 +57,7 @@ export const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0" />
           <div className="flex flex-col gap-0.5">
-            <span className="text-[14px] leading-[20px] font-semibold text-text-main">
+            <span className="text-[14px] leading-5 font-semibold text-text-main">
               Неверная почта или пароль
             </span>
             <span className="text-caption text-text-secondary">
