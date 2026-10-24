@@ -1,14 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.config import settings
 from app.database import get_db
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 
 from app.models import User
 
-from app.schemas.s_users import SUserCreate, SUserResponse
-from app.schemas.s_auth import SToken, SLogin
+from app.schemas import SUserCreate, SUserCreateResponse, SToken
 
 from app.security import hash_password, verify_password
 
@@ -36,23 +36,33 @@ def create_access_token(user_id: int) -> str:
     )
 
 
-@router.post("/register", response_model=SUserResponse)
+@router.post("/register", response_model=SUserCreateResponse)
 def register(new_user: SUserCreate, db: Session = Depends(get_db)):
     test_user = db.execute(select(User).where(User.email == new_user.email)).scalar_one_or_none()
 
     if test_user:
         raise HTTPException(400, "User with this email already exists")
 
-    db_user = User(name=new_user.name,
-                   surname=new_user.surname,
-                   email=new_user.email,
+    db_user = User(email=new_user.email,
                    hashed_password=hash_password(new_user.password))
 
     db.add(db_user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email already exists") from exc
     db.refresh(db_user)
 
-    return db_user
+    access_token = create_access_token(db_user.id)
+
+    return {
+        "user": db_user,
+        "token": {
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+    }
 
 
 @router.post("/login", response_model=SToken)
