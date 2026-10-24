@@ -5,14 +5,9 @@ from sqlalchemy.orm import Session
 
 from app.schemas.s_users import SUserUpdate, SUserResponse
 from app.dependencies import get_current_user
+from app.services import user_update_serv
 
 router = APIRouter(prefix="/users", tags=["Users"])
-
-
-# Это будет иметь смысл только если делать admin-панель
-# @router.get("")
-# def get_users(db: Session = Depends(get_db)):
-#     return db.execute(select(User)).scalars().all()
 
 
 @router.get("/me", response_model=SUserResponse)
@@ -24,15 +19,7 @@ def get_single_user(
 
 @router.patch("/me", response_model=SUserResponse)
 def update_user(data: SUserUpdate, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
-    to_update = data.model_dump(exclude_none=True)
-
-    for key, value in to_update.items():
-        setattr(current_user, key, value)
-
-    db.commit()
-    db.refresh(current_user)
-
-    return current_user
+    return user_update_serv(data, current_user, db)
 
 
 @router.delete("/me")
