@@ -10,7 +10,7 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
-    name: Mapped[str] = mapped_column(
+    title: Mapped[str] = mapped_column(
         String(50),
         nullable=False
     )
