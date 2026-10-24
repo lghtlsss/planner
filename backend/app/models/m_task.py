@@ -5,6 +5,8 @@ from app.database import Base
 
 
 class Task(Base):
+    """Задачи, добавляющиеся на день из дедлайнов."""
+    # TODO: доделать именно логику добавления из дедлайна
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)

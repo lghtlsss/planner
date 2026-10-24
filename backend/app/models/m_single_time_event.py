@@ -7,6 +7,7 @@ from app.database import Base
 
 
 class Event(Base):
+    """Разовое событие, добавляется на конкретный день."""
     __tablename__ = "events"
 
     id: Mapped[int] = mapped_column(
