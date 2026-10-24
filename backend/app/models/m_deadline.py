@@ -53,12 +53,20 @@ class Deadline(Base):
         default=False
     )
 
-    comment: Mapped[str] = mapped_column(
+    comment: Mapped[str | None] = mapped_column(
         String(200),
-        nullable=True,
-        default=None
+        nullable=True
     )
 
+    completed: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False
+    )
+
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True
+    )
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"),
         nullable=False
