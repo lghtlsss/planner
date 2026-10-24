@@ -4,14 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, CalendarDays, Home, List, UserRound } from "lucide-react";
-import { getSchedule } from "@/lib/api";
+import { getMe, getScheduleForUser } from "@/lib/api";
 import { cn } from "cn";
 
 export function TabBar() {
   const pathname = usePathname();
+  const me = useQuery({ queryKey: ["me"], queryFn: getMe });
+  const groupId = me.data?.group_id ?? null;
+
   const schedule = useQuery({
-    queryKey: ["schedule"],
-    queryFn: getSchedule,
+    queryKey: ["schedule", groupId],
+    queryFn: () => getScheduleForUser(me.data),
+    enabled: groupId != null,
   });
 
   const tabs = [

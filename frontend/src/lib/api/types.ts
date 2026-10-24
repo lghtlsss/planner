@@ -6,6 +6,7 @@ export interface User {
   name: string;
   surname?: string | null;
   email: string;
+  group_id: number | null;
   sleepTimeHours: number | null;
   goToSleepTime: string | null;
   wakeUpTime: string | null;
@@ -33,6 +34,7 @@ export interface TokenResponse {
 export interface UpdateUserRequest {
   name?: string;
   surname?: string | null;
+  group_id?: number | null;
   goToSleepTime?: string | null;
   wakeUpTime?: string | null;
   sleepTimeHours?: number | null;
@@ -115,6 +117,8 @@ export interface CreateEventResponse {
   intersection: boolean;
 }
 
+export type UpdateEventResponse = CreateEventResponse;
+
 // ---------- Deadlines (/deadlines) ----------
 
 export interface Deadline {
@@ -158,121 +162,131 @@ export interface MessageResponse {
   message: string;
 }
 
-// ---------- Schedule (/schedule) ----------
+// ---------- Catalog & Schedule (/faculties, /programs, /groups, /schedule, /sources) ----------
 
-export type DateRuleType = "whole_period" | "range" | "list" | "single";
-
-export type WarningSeverity = "info" | "warning" | "error" | "critical";
-
-export interface ScheduleMetadata {
-  faculty: string;
-  program: string;
-  course: number;
-  module: number;
-  period_start: string | null;
-  period_end: string | null;
-  sheet_name: string;
-}
-
-export interface Building {
-  code: string;
-  address: string | null;
-}
-
-export interface ScheduleGroupMetadata {
+export interface FacultyOut {
+  id: number;
   name: string;
-  program: string;
+}
+
+export interface ProgramLinkOut {
+  state: "ok" | "expiring" | "needs_new_link" | string;
+  needs_new_link: boolean;
+  expiring_soon: boolean;
+  days_left?: number | null;
+  period_end?: string | null;
+  module?: number | null;
+  source_id?: number | null;
+}
+
+export interface ProgramOut {
+  id: number;
+  faculty_id: number;
   faculty: string;
+  degree: string;
+  name: string;
+  label: string;
+  link: ProgramLinkOut;
+}
+
+export interface ProgramStatusOut extends ProgramLinkOut {
+  program_id: number;
+  faculty: string;
+  program: string;
+}
+
+export interface GroupOut {
+  id: number;
+  name: string;
   course: number;
-  stream_label: string;
+  stream_label?: string | null;
+  program_id: number;
+  program: string;
+  faculty_id: number;
+  faculty: string;
 }
 
-export interface DateRule {
-  type: DateRuleType;
-  start_date: string | null;
-  end_date: string | null;
-  dates: string[];
-  excluded_dates: string[];
-  raw: string | null;
+export interface GetGroupsParams {
+  program_id?: number | null;
+  faculty_id?: number | null;
+  course?: number | null;
+  q?: string | null;
+  include_inactive?: boolean;
+  limit?: number;
 }
 
-export interface TimeOverride {
-  on_date: string;
+export interface LessonOut {
   start_time: string;
   end_time: string;
-}
-
-export interface Lesson {
-  group: string;
-  day_of_week: DayOfWeek;
-  start_time: string;
-  end_time: string;
-
-  subject: string | null;
-  lesson_type: string | null;
-  teacher: string | null;
-
-  room: string | null;
-  building: string | null;
-  online: boolean;
-
-  dates: DateRule;
-
-  stream_group: string | null;
-  subgroup: string | null;
-
-  time_overrides: TimeOverride[];
-
-  raw_text: string | null;
-  source_cell: string | null;
+  subject?: string | null;
+  lesson_type?: string | null;
+  teacher?: string | null;
+  room?: string | null;
+  building?: string | null;
+  building_address?: string | null;
+  online?: boolean;
+  stream_group?: string | null;
+  subgroup?: string | null;
+  is_approximate?: boolean;
   is_changed?: boolean;
 }
 
-export interface ScheduleNote {
-  group: string;
-  day_of_week: DayOfWeek;
+export interface NoteOut {
   start_time: string;
   end_time: string;
   text: string;
-  source_cell: string | null;
 }
 
-export interface ScheduleNoteEntry {
-  note: ScheduleNote;
+export interface DayOut {
+  date: string;
+  weekday: number;
+  weekday_short: string;
+  lessons: LessonOut[];
+  notes: NoteOut[];
 }
 
-export type ScheduleEntry = Lesson | ScheduleNoteEntry;
-
-export type ScheduleDay = Partial<Record<DayOfWeek, ScheduleEntry[]>>;
-
-export type ScheduleGroups = Record<string, ScheduleDay>;
-
-export interface ParseWarning {
-  severity: WarningSeverity;
-  message: string;
-  location: string | null;
-  raw_value: string | null;
+export interface ScheduleMetaOut {
+  stream_groups_available: string[];
+  subgroups_available: string[];
+  has_approximate: boolean;
 }
 
-export interface ParsedSchedule {
-  source: ScheduleMetadata;
-  buildings: Record<string, Building>;
-  groups: ScheduleGroups;
-  warnings: ParseWarning[];
+export interface ScheduleOut {
+  group: GroupOut;
+  date_from: string;
+  date_to: string;
+  days: DayOut[];
+  meta: ScheduleMetaOut;
+  has_unread_changes?: boolean;
+  changed_count?: number;
 }
 
-export type ScheduleResponse = Record<string, ParsedSchedule>;
-
-export interface UserScheduleResponse {
-  schedule: ScheduleResponse | null;
-  has_unread_changes: boolean;
-  changed_count: number;
-  source_name: string | null;
-  source_url: string | null;
-  updated_at: string | null;
+export interface GetScheduleParams {
+  group_id: number;
+  date_from?: string | null;
+  date_to?: string | null;
+  subgroup?: string | null;
+  stream_groups?: string[] | null;
 }
 
-export interface UploadScheduleByUrlRequest {
+export interface AddSourceIn {
   url: string;
-  group?: string;
+  faculty?: string | null;
+  program?: string | null;
+}
+
+export interface AddSourceOut {
+  ok: boolean;
+  message: string;
+  source_id?: number | null;
+  program_id?: number | null;
+  faculty?: string | null;
+  program?: string | null;
+  module?: number | null;
+  period_start?: string | null;
+  period_end?: string | null;
+  groups?: number;
+  lessons?: number;
+  already_exists?: boolean;
+  errors?: string[];
 }

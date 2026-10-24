@@ -8,12 +8,16 @@ import { Button } from "@/components/ui/button";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { uploadScheduleFile, uploadScheduleUrl } from "@/lib/api";
+import {
+  createScheduleSource,
+  uploadScheduleFile,
+  type AddSourceOut,
+} from "@/lib/api";
 
 export interface ScheduleUploadSheetProps {
   open: boolean;
   onClose: () => void;
-  onUploaded?: (changedCount: number) => void;
+  onUploaded?: (result: AddSourceOut) => void;
 }
 
 export function ScheduleUploadSheet({
@@ -29,17 +33,32 @@ export function ScheduleUploadSheet({
   const uploadMutation = useMutation({
     mutationFn: async () => {
       setError(null);
-      if (file) {
-        return uploadScheduleFile(file);
-      }
       if (url.trim()) {
-        return uploadScheduleUrl({ url: url.trim() });
+        const res = await createScheduleSource({ url: url.trim() });
+        if (!res.ok) {
+          throw new Error(
+            res.errors?.[0] || res.message || "Не удалось подключить ссылку",
+          );
+        }
+        return res;
+      }
+      if (file) {
+        const res = await uploadScheduleFile(file);
+        if (!res.ok) {
+          throw new Error(
+            res.errors?.[0] || res.message || "Не удалось загрузить файл",
+          );
+        }
+        return res;
       }
       throw new Error("Выберите файл Excel (.xlsx) или вставьте ссылку на таблицу");
     },
     onSuccess: async (res) => {
-      await queryClient.invalidateQueries({ queryKey: ["schedule"] });
-      onUploaded?.(res.changed_count ?? 0);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["schedule"] }),
+        queryClient.invalidateQueries({ queryKey: ["groups"] }),
+      ]);
+      onUploaded?.(res);
       setFile(null);
       setUrl("");
       onClose();

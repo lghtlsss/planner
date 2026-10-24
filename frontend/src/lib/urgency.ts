@@ -54,6 +54,11 @@ export function formatTime(iso: string): string {
 }
 
 export function isSameDay(iso: string, day: Date): boolean {
+  if (!iso) return false;
+  // Если передана дата формата YYYY-MM-DD (например, event_date), сравниваем напрямую без сдвига часовых поясов
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso.trim())) {
+    return iso.trim() === format(day, "yyyy-MM-dd");
+  }
   const date = toDate(iso);
   if (!date) return false;
   return dfIsSameDay(date, day);
@@ -67,6 +72,11 @@ export function greetingForNow(): string {
 }
 
 export function eventOnDay(eventDate: string, day: Date): boolean {
+  if (!eventDate) return false;
+  const datePrefix = eventDate.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePrefix) && eventDate.length === 10) {
+    return datePrefix === format(day, "yyyy-MM-dd");
+  }
   return isSameDay(eventDate, day);
 }
 
