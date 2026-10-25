@@ -189,7 +189,7 @@ JWT_ALGORITHM=HS256
 ```env
 GOOGLE_SHEETS_API_KEY=your-google-sheets-api-key
 
-CORS_ORIGINS=["http://localhost:3000"]
+CORS_ORIGINS=["http://localhost:3000", "http://tauri.localhost"]
 ```
 
 ### Запуск фронтенда
@@ -214,7 +214,7 @@ bun run tauri dev
 
 ### Локальный запуск бэкенда
 
-Требуется Python 3.12 и доступный экземпляр PostgreSQL. Из корня репозитория выполните:
+Требуется Python 3.12 или выше и доступный экземпляр PostgreSQL. Из корня репозитория выполните:
 
 ```bash
 cd backend
