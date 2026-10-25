@@ -3,6 +3,7 @@ from app.models import User, Event
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.schemas import SEventCreate, SEventUpdate
+from datetime import date
 
 
 def check_intersection(user: User, data: Event | SEventCreate, db: Session):
@@ -110,3 +111,12 @@ def update_event_service(event_id: int, user: User, data: SEventUpdate, db: Sess
     db.refresh(curr_event)
 
     return {"event": curr_event, "intersection": intersection}
+
+
+def get_events_by_date_serv(aim_date: date, user: User, db: Session):
+    return {"events": db.execute(
+        select(Event).where(
+            Event.event_date == aim_date,
+            Event.user_id == user.id
+        )
+    ).scalars().all()}

@@ -1,5 +1,5 @@
 from app.services.single_time_events_service import create_event_service, delete_event_service, get_single_event_service, \
-    update_event_service
+    update_event_service, get_events_by_date_serv
 from app.services.deadline_service import get_deadline_for_user, get_all_deadlines_for_user, \
     get_all_deadlines_by_expire_date, delete_deadline_by_id, update_deadline_by_id, create_deadline
 from app.services.users_service import user_update_serv
