@@ -1,7 +1,9 @@
 import { getSession } from "../session";
 import { ApiError, type ApiErrorResponse } from "./errors";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "https://personalplanner-ybpm.onrender.com";
 
 export interface ApiRequestOptions extends RequestInit {
   auth?: boolean;
