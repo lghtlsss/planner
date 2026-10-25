@@ -23,6 +23,15 @@ def get_routine_by_id_serv(routine_id: int, current_user: User, db: Session):
     return check_routine_accessibility(routine_id, current_user, db)
 
 
+def get_all_routines_for_user(current_user: User, db: Session):
+    routines = db.execute(
+        select(Routine)
+        .where(Routine.user_id == current_user.id)
+        .order_by(Routine.start_time, Routine.title)
+    ).scalars().all()
+    return {"routines": routines}
+
+
 def get_routine_by_day_serv(day: DayOfWeek, current_user: User, db: Session):
     routines = db.execute(
         select(Routine).where(

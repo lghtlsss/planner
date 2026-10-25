@@ -62,7 +62,7 @@ def create_task_serv(data: STaskCreate, current_user: User, db: Session):
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Task already exists") from exc
+            detail="Task conflicts with existing data") from exc
     db.refresh(new_task)
 
     return new_task

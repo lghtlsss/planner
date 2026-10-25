@@ -6,9 +6,8 @@ from .s_auth import SToken
 class SUserResponse(BaseModel):
     name: str | None = None
     email: str
-    sleep_time_hours: int | None = Field(default=None, ge=0, le=12)
     go_to_sleep_time: time | None = None
-    wake_up_time: int | None = Field(default=None, ge=0, le=23)
+    wake_up_time: time | None = None
     profile_completed: bool
 
     model_config = {
@@ -30,9 +29,8 @@ class SUserUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2)
     email: str | None = None
     password: str | None = Field(default=None, min_length=8)
-    sleep_time_hours: int | None = Field(default=None, ge=0, le=12)
     go_to_sleep_time: time | None = None
-    wake_up_time: int | None = Field(default=None, ge=0, le=23)
+    wake_up_time: time | None = None
 
     @field_validator("name")
     @classmethod

@@ -29,10 +29,9 @@ class Task(Base):
         Date,
         nullable=False)
 
-    deadline_id: Mapped[int] = mapped_column(
+    deadline_id: Mapped[int | None] = mapped_column(
         ForeignKey("deadlines.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True
     )
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)

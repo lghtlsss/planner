@@ -8,12 +8,18 @@ from app.enums import DayOfWeek
 from app.services import (
     create_routine_serv,
     delete_routine_serv,
+    get_all_routines_for_user,
     get_routine_by_day_serv,
     get_routine_by_id_serv,
     update_routine_serv,
 )
 
 router = APIRouter(prefix="/routines", tags=["Routines"])
+
+
+@router.get("", response_model=SRoutinesListResponse)
+def get_all_routines(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return get_all_routines_for_user(current_user, db)
 
 
 @router.get("/by_id/{routine_id}", response_model=SRoutineResponse)
