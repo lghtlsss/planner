@@ -6,40 +6,8 @@ from app.schemas import SEventCreate, SEventUpdate
 from datetime import date
 
 
-def check_intersection(user: User, data: Event | SEventCreate, db: Session):
-    """
-    Проверяет, пересекается ли событие с уже запланированными.
-    """
-    events_intersection = db.execute(select(Event).where(
-        Event.user_id == user.id,
-        Event.event_date == data.event_date,
-        Event.start_time < data.end_time,
-        Event.end_time > data.start_time
-    )).scalars().all()
-    if events_intersection is not None:
-        return True
-    return False
-
-
 def create_event_service(data: SEventCreate, user: User, db: Session):
-    """
-    Создаёт событие.
-    Перед этим производится проверка, не существует ли уже такое событие
-        и не пересечётся ли новое событие с уже запланированными.
-    """
-    do_event_exists = db.execute(select(Event).where(
-        Event.event_date == data.event_date,
-        Event.start_time == data.start_time,
-        Event.user_id == user.id
-    )).scalar_one_or_none()
-
-    if do_event_exists is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail="У вас уже есть событие на это время"
-                            )
-
-    intersection_flag = check_intersection(user, data, db)
-
+    """Создаёт событие."""
     new_event = Event(
         name=data.name,
         description=data.description,
@@ -57,7 +25,7 @@ def create_event_service(data: SEventCreate, user: User, db: Session):
         db.rollback()
         raise e
 
-    return {"event": new_event, "intersection": intersection_flag}
+    return new_event
 
 
 def get_event_for_user(event_id, user: User, db: Session) -> Event:
@@ -92,25 +60,41 @@ def get_single_event_service(event_id: int, user: User, db: Session) -> Event:
 
 
 def update_event_service(event_id: int, user: User, data: SEventUpdate, db: Session):
-    """Обновление данных о событии с проверкой на пересечение"""
+    """Обновление данных о событии."""
     curr_event = get_event_for_user(event_id, user, db)
 
     fields_to_update = data.model_dump(exclude_unset=True)
 
-    SEventUpdate(
-        start_time=fields_to_update.get("start_time", curr_event.start_time),
-        end_time=fields_to_update.get("end_time", curr_event.end_time),
-    )
+    start_time = fields_to_update.get("start_time", curr_event.start_time)
+    end_time = fields_to_update.get("end_time", curr_event.end_time)
+    if fields_to_update.get("name", curr_event.name) is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Name cannot be null",
+        )
+    if start_time is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Start time cannot be null",
+        )
+    if fields_to_update.get("event_date", curr_event.event_date) is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Event date cannot be null",
+        )
+    if end_time is not None and start_time >= end_time:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Start time must be earlier than end time",
+        )
 
     for key, value in fields_to_update.items():
         setattr(curr_event, key, value)
 
-    intersection = check_intersection(user, curr_event, db)
-
     db.commit()
     db.refresh(curr_event)
 
-    return {"event": curr_event, "intersection": intersection}
+    return curr_event
 
 
 def get_events_by_date_serv(aim_date: date, user: User, db: Session):

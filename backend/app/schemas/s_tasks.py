@@ -1,5 +1,5 @@
 from datetime import date, time
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 class STaskCreate(BaseModel):
@@ -9,6 +9,12 @@ class STaskCreate(BaseModel):
     potential_end_time: time
     task_date: date
     deadline_id: int
+
+    @model_validator(mode="after")
+    def check_time_range(self):
+        if self.start_time >= self.potential_end_time:
+            raise ValueError("Время начала должно быть раньше времени окончания")
+        return self
 
 
 class STaskResponse(BaseModel):
@@ -42,6 +48,16 @@ class STaskUpdate(BaseModel):
         if value is None:
             raise ValueError("Это поле нельзя очистить")
         return value
+
+    @model_validator(mode="after")
+    def check_time_range(self):
+        if (
+            self.start_time is not None
+            and self.potential_end_time is not None
+            and self.start_time >= self.potential_end_time
+        ):
+            raise ValueError("Время начала должно быть раньше времени окончания")
+        return self
 
 
 class SListTaskResponse(BaseModel):

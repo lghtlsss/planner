@@ -73,6 +73,14 @@ def update_task_serv(task_id: int, data: STaskUpdate, current_user: User, db: Se
 
     fields_to_update = data.model_dump(exclude_unset=True)
 
+    start_time = fields_to_update.get("start_time", db_task.start_time)
+    potential_end_time = fields_to_update.get("potential_end_time", db_task.potential_end_time)
+    if start_time >= potential_end_time:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Start time must be earlier than potential end time",
+        )
+
     if "deadline_id" in fields_to_update:
         if fields_to_update["deadline_id"] is None:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="deadline_id cannot be null")
@@ -103,7 +111,7 @@ def get_task_by_date_serv(task_date: date, current_user: User, db: Session):
 
 
 def get_tasks_from_to_serv(start_date: date, end_date: date, current_user: User, db: Session):
-    if start_date >= end_date:
+    if start_date > end_date:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Start date can not be later than end date")
 
     return {"tasks": db.execute(

@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.schemas import SDeadlineCreate, SDeadlineUpdate
 from fastapi import HTTPException, status
-from datetime import date
+from datetime import date, datetime, time, timedelta
 
 
 def get_deadline_for_user(user: User, dd_id, db: Session):
@@ -38,7 +38,8 @@ def get_all_deadlines_by_expire_date(dd_date: date, db: Session, user: User):
     """
     db_dd = db.execute(select(Deadline).where(
         Deadline.user_id == user.id,
-        Deadline.expire_date == dd_date,
+        Deadline.expire_date >= datetime.combine(dd_date, time.min),
+        Deadline.expire_date < datetime.combine(dd_date + timedelta(days=1), time.min),
     )).scalars().all()
 
     return {"deadlines": db_dd}

@@ -50,7 +50,7 @@ class SEventResponse(BaseModel):
     name: str
     description: str | None = None
     start_time: time
-    end_time: time
+    end_time: time | None
     event_date: date
 
     model_config = {
@@ -60,8 +60,3 @@ class SEventResponse(BaseModel):
 
 class SListEventResponse(BaseModel):
     events: list[SEventResponse]
-
-
-class SEventCreateOrUpdateResponse(BaseModel):
-    event: SEventResponse
-    intersection: bool

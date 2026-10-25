@@ -45,3 +45,10 @@ class SUserUpdate(BaseModel):
             raise ValueError("Имя не может состоять из пробелов")
 
         return value
+
+    @field_validator("email", "password")
+    @classmethod
+    def credentials_must_not_be_null(cls, value: str | None) -> str | None:
+        if value is None:
+            raise ValueError("Это поле нельзя очистить")
+        return value
