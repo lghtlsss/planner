@@ -23,7 +23,7 @@ class User(Base):
         nullable=False,
         unique=True
     )
-    group_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    group_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
     go_to_sleep_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     wake_up_time: Mapped[time | None] = mapped_column(Time, nullable=True)
 
