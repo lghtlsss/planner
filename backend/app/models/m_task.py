@@ -1,8 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey, DateTime, Date, Time
-from datetime import datetime, timezone, date, time
+from sqlalchemy import String, ForeignKey, Date, Time
+from datetime import date, time
 from app.database import Base
-from app.models import Deadline
 
 
 class Task(Base):
