@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -53,7 +53,7 @@ function DayContent() {
   const params = useSearchParams();
   const [defaultDate] = useState(() => isoDate(new Date()));
   const date = params.get("date") ?? defaultDate;
-  const day = useMemo(() => new Date(`${date}T00:00:00`), [date]);
+  const day = new Date(`${date}T00:00:00`);
   const dayOfWeek = JS_DAY_TO_KEY[day.getDay()];
 
   const events = useQuery({ queryKey: ["events"], queryFn: getEvents });
@@ -72,67 +72,65 @@ function DayContent() {
     enabled: groupId != null,
   });
 
-  const timelineItems = useMemo<DayTimelineItem[]>(() => {
-    const items: DayTimelineItem[] = [];
+  const timelineItems: DayTimelineItem[] = [];
 
-    // 1. Пары из расписания группы (/schedule)
-    const dayObj = schedule.data?.days.find((d) => d.date === date);
-    const dayLessons = (dayObj?.lessons ?? []).filter((lesson) =>
-      Boolean(lesson.subject),
-    );
-    for (const [idx, lesson] of dayLessons.entries()) {
-      const location = [
-        lesson.building ? `к. ${lesson.building}` : null,
-        lesson.room ? `ауд. ${lesson.room}` : null,
-      ]
-        .filter(Boolean)
-        .join(", ");
+  // 1. Пары из расписания группы (/schedule)
+  const dayObj = schedule.data?.days.find((d) => d.date === date);
+  const dayLessons = (dayObj?.lessons ?? []).filter((lesson) =>
+    Boolean(lesson.subject),
+  );
+  for (const [idx, lesson] of dayLessons.entries()) {
+    const location = [
+      lesson.building ? `к. ${lesson.building}` : null,
+      lesson.room ? `ауд. ${lesson.room}` : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
 
-      items.push({
-        key: `para-${idx}-${lesson.start_time}`,
-        kind: "para",
-        start_time: eventClock(lesson.start_time),
-        end_time: eventClock(lesson.end_time),
-        title: lesson.subject!,
-        subtitle: location || lesson.lesson_type || null,
-      });
-    }
+    timelineItems.push({
+      key: `para-${idx}-${lesson.start_time}`,
+      kind: "para",
+      start_time: eventClock(lesson.start_time),
+      end_time: eventClock(lesson.end_time),
+      title: lesson.subject!,
+      subtitle: location || lesson.lesson_type || null,
+    });
+  }
 
-    // 2. Запланированные на этот день задачи (/events)
-    const dayEvents = (events.data ?? []).filter((event) =>
-      eventOnDay(event.event_date, day),
-    );
-    for (const event of dayEvents) {
-      items.push({
-        key: `task-${event.id}`,
-        kind: "task",
-        start_time: eventClock(event.start_time),
-        end_time: eventClock(event.end_time),
-        title: event.name,
-        subtitle: event.expire_date
-          ? `Дедлайн ${pillDate(event.expire_date)}`
-          : event.description || null,
-        comment: event.comment ?? null,
-      });
-    }
+  // 2. Запланированные на этот день задачи (/events)
+  const dayEvents = (events.data ?? []).filter((event) =>
+    eventOnDay(event.event_date, day),
+  );
+  for (const event of dayEvents) {
+    timelineItems.push({
+      key: `task-${event.id}`,
+      kind: "task",
+      start_time: eventClock(event.start_time),
+      end_time: eventClock(event.end_time),
+      title: event.name,
+      subtitle: event.expire_date
+        ? `Дедлайн ${pillDate(event.expire_date)}`
+        : event.description || null,
+      comment: event.comment ?? null,
+    });
+  }
 
-    // 3. Постоянные дела на этот день недели (/routines)
-    const dayRoutines = (routines.data ?? []).filter((r) =>
-      r.days.includes(dayOfWeek),
-    );
-    for (const routine of dayRoutines) {
-      items.push({
-        key: `delo-${routine.id}`,
-        kind: "delo",
-        start_time: eventClock(routine.start_time),
-        end_time: eventClock(routine.end_time),
-        title: routine.name,
-        subtitle: "Постоянное дело",
-      });
-    }
+  // 3. Постоянные дела на этот день недели (/routines)
+  const dayRoutines = (routines.data ?? []).filter((r) =>
+    r.days.includes(dayOfWeek),
+  );
+  for (const routine of dayRoutines) {
+    timelineItems.push({
+      key: `delo-${routine.id}`,
+      kind: "delo",
+      start_time: eventClock(routine.start_time),
+      end_time: eventClock(routine.end_time),
+      title: routine.name,
+      subtitle: "Постоянное дело",
+    });
+  }
 
-    return items.sort((a, b) => a.start_time.localeCompare(b.start_time));
-  }, [schedule.data, events.data, routines.data, date, day, dayOfWeek]);
+  timelineItems.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
   return (
     <AppShell>

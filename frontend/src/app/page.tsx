@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -67,7 +67,7 @@ export default function HomePage() {
   const [sheet, setSheet] = useState<Deadline | null | "new">(null);
 
   const [today] = useState(() => new Date());
-  const todayIso = useMemo(() => isoDate(today), [today]);
+  const todayIso = isoDate(today);
   const todayWeekday = JS_DAY_TO_KEY[today.getDay()];
 
   const me = useQuery({ queryKey: ["me"], queryFn: getMe });
@@ -110,59 +110,57 @@ export default function HomePage() {
     }
   }, [me.isSuccess, me.data, router]);
 
-  const timelineItems = useMemo<TodayTimelineItem[]>(() => {
-    const items: TodayTimelineItem[] = [];
+  const timelineItems: TodayTimelineItem[] = [];
 
-    const todaySchedule = schedule.data?.days.find((d) => d.date === todayIso);
-    for (const [idx, lesson] of (todaySchedule?.lessons ?? []).entries()) {
-      if (!lesson.subject) continue;
-      const location = [
-        lesson.building ? `к. ${lesson.building}` : null,
-        lesson.room ? `ауд. ${lesson.room}` : null,
-      ]
-        .filter(Boolean)
-        .join(", ");
-      items.push({
-        key: `para-${idx}-${lesson.start_time}`,
-        kind: "para",
-        start_time: eventClock(lesson.start_time),
-        end_time: eventClock(lesson.end_time),
-        title: lesson.subject,
-        subtitle: location || lesson.lesson_type || null,
-      });
-    }
+  const todaySchedule = schedule.data?.days.find((d) => d.date === todayIso);
+  for (const [idx, lesson] of (todaySchedule?.lessons ?? []).entries()) {
+    if (!lesson.subject) continue;
+    const location = [
+      lesson.building ? `к. ${lesson.building}` : null,
+      lesson.room ? `ауд. ${lesson.room}` : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    timelineItems.push({
+      key: `para-${idx}-${lesson.start_time}`,
+      kind: "para",
+      start_time: eventClock(lesson.start_time),
+      end_time: eventClock(lesson.end_time),
+      title: lesson.subject,
+      subtitle: location || lesson.lesson_type || null,
+    });
+  }
 
-    for (const event of (events.data ?? []).filter((e: Event) =>
-      eventOnDay(e.event_date, today),
-    )) {
-      items.push({
-        key: `event-${event.id}`,
-        kind: "task",
-        start_time: eventClock(event.start_time),
-        end_time: eventClock(event.end_time),
-        title: event.name,
-        subtitle: event.expire_date
-          ? `Дедлайн ${pillDate(event.expire_date)}`
-          : event.description || null,
-        comment: event.comment ?? null,
-      });
-    }
+  for (const event of (events.data ?? []).filter((e: Event) =>
+    eventOnDay(e.event_date, today),
+  )) {
+    timelineItems.push({
+      key: `event-${event.id}`,
+      kind: "task",
+      start_time: eventClock(event.start_time),
+      end_time: eventClock(event.end_time),
+      title: event.name,
+      subtitle: event.expire_date
+        ? `Дедлайн ${pillDate(event.expire_date)}`
+        : event.description || null,
+      comment: event.comment ?? null,
+    });
+  }
 
-    for (const routine of (routines.data ?? []).filter((r) =>
-      r.days.includes(todayWeekday),
-    )) {
-      items.push({
-        key: `routine-${routine.id}`,
-        kind: "delo",
-        start_time: eventClock(routine.start_time),
-        end_time: eventClock(routine.end_time),
-        title: routine.name,
-        subtitle: "Постоянное дело",
-      });
-    }
+  for (const routine of (routines.data ?? []).filter((r) =>
+    r.days.includes(todayWeekday),
+  )) {
+    timelineItems.push({
+      key: `routine-${routine.id}`,
+      kind: "delo",
+      start_time: eventClock(routine.start_time),
+      end_time: eventClock(routine.end_time),
+      title: routine.name,
+      subtitle: "Постоянное дело",
+    });
+  }
 
-    return items.sort((a, b) => a.start_time.localeCompare(b.start_time));
-  }, [schedule.data, events.data, routines.data, today, todayIso, todayWeekday]);
+  timelineItems.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
   const dated = (deadlines.data ?? []).filter((item) => item.expire_date);
   const open = (deadlines.data ?? []).filter((item) => !item.expire_date);
@@ -242,7 +240,7 @@ export default function HomePage() {
                           <p className="text-[12px] text-white/70">
                             Комментарий
                           </p>
-                          <p className="text-[13px] leading-[18px]">
+                          <p className="text-[13px] leading-4.5">
                             {item.comment}
                           </p>
                         </PopoverContent>

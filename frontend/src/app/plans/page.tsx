@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
@@ -53,13 +53,10 @@ export default function PlansPage() {
   const events = useQuery({ queryKey: ["events"], queryFn: getEvents });
   const routines = useQuery({ queryKey: ["routines"], queryFn: getRoutines });
 
-  const days = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addDays(week, index)),
-    [week],
-  );
+  const days = Array.from({ length: 7 }, (_, index) => addDays(week, index));
   const end = addDays(week, 6);
-  const dateFrom = useMemo(() => isoDate(week), [week]);
-  const dateTo = useMemo(() => isoDate(end), [end]);
+  const dateFrom = isoDate(week);
+  const dateTo = isoDate(end);
 
   const groupId = me.data?.group_id ?? null;
 

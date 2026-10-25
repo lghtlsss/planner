@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
@@ -14,11 +14,7 @@ import { AppShell } from "@/components/mobile/app-shell";
 import { ScheduleUploadSheet } from "@/components/planner/schedule-upload-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  getMe,
-  getScheduleForUser,
-  type LessonOut,
-} from "@/lib/api";
+import { getMe, getScheduleForUser, type LessonOut } from "@/lib/api";
 import { addDays, formatWeekRange, isoDate, startOfWeek } from "@/lib/urgency";
 import { cn } from "cn";
 
@@ -35,8 +31,8 @@ export default function SchedulePage() {
     queryFn: getMe,
   });
 
-  const dateFrom = useMemo(() => isoDate(week), [week]);
-  const dateTo = useMemo(() => isoDate(addDays(week, 5)), [week]);
+  const dateFrom = isoDate(week);
+  const dateTo = isoDate(addDays(week, 5));
   const groupId = meQuery.data?.group_id ?? null;
   const hasGroup = groupId != null;
 
@@ -50,21 +46,17 @@ export default function SchedulePage() {
     enabled: hasGroup,
   });
 
-  const days = useMemo(
-    () => Array.from({ length: 6 }, (_, index) => addDays(week, index)),
-    [week],
-  );
+  const days = Array.from({ length: 6 }, (_, index) => addDays(week, index));
 
   const selectedDateIso = isoDate(days[selectedIndex] ?? days[0]);
-  const pairs: LessonOut[] = useMemo(() => {
-    const dayObj = scheduleQuery.data?.days.find(
-      (d) => d.date === selectedDateIso,
-    );
-    if (!dayObj) return [];
-    return [...dayObj.lessons]
-      .filter((lesson) => Boolean(lesson.subject))
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
-  }, [scheduleQuery.data, selectedDateIso]);
+  const dayObj = scheduleQuery.data?.days.find(
+    (d) => d.date === selectedDateIso,
+  );
+  const pairs: LessonOut[] = dayObj
+    ? [...dayObj.lessons]
+        .filter((lesson) => Boolean(lesson.subject))
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))
+    : [];
 
   const loaded = Boolean(
     hasGroup && scheduleQuery.data && scheduleQuery.data.days.length > 0,
@@ -135,7 +127,9 @@ export default function SchedulePage() {
                       : "bg-card text-text-main ring-1 ring-border",
                   )}
                 >
-                  <div className="text-[11px] opacity-80">{WEEKDAYS[index]}</div>
+                  <div className="text-[11px] opacity-80">
+                    {WEEKDAYS[index]}
+                  </div>
                   <div className="text-[16px] font-semibold">
                     {day.getDate()}
                   </div>
@@ -213,9 +207,7 @@ export default function SchedulePage() {
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
         onUploaded={(res) => {
-          setUploadedMessage(
-            res.message || "Расписание успешно обновлено",
-          );
+          setUploadedMessage(res.message || "Расписание успешно обновлено");
         }}
       />
     </AppShell>
