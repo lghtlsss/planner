@@ -6,9 +6,8 @@ export interface User {
   name: string | null;
   email: string;
   group_id: number | null;
-  sleep_time_hours: number | null;
   go_to_sleep_time: string | null;
-  wake_up_time: string | number | null;
+  wake_up_time: string | null;
   profile_completed: boolean;
 }
 
@@ -37,9 +36,8 @@ export interface UpdateUserRequest {
   email?: string | null;
   password?: string | null;
   group_id?: number | null;
-  sleep_time_hours?: number | null;
   go_to_sleep_time?: string | null;
-  wake_up_time?: string | number | null;
+  wake_up_time?: string | null;
 }
 
 // ---------- Routines (/routines) ----------

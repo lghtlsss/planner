@@ -105,13 +105,3 @@ export function createScheduleSource(
     body: JSON.stringify(data),
   });
 }
-
-export function uploadScheduleFile(file: File): Promise<AddSourceOut> {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  return apiRequest<AddSourceOut>("/sources/upload", {
-    method: "POST",
-    body: formData,
-  });
-}

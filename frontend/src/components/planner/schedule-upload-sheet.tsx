@@ -5,14 +5,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link2 } from "lucide-react";
 import { Sheet } from "@/components/mobile/sheet";
 import { Button } from "@/components/ui/button";
-import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  createScheduleSource,
-  uploadScheduleFile,
-  type AddSourceOut,
-} from "@/lib/api";
+import { createScheduleSource, type AddSourceOut } from "@/lib/api";
 
 export interface ScheduleUploadSheetProps {
   open: boolean;
@@ -26,32 +21,23 @@ export function ScheduleUploadSheet({
   onUploaded,
 }: ScheduleUploadSheetProps) {
   const queryClient = useQueryClient();
-  const [file, setFile] = React.useState<File | null>(null);
   const [url, setUrl] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
       setError(null);
-      if (url.trim()) {
-        const res = await createScheduleSource({ url: url.trim() });
-        if (!res.ok) {
-          throw new Error(
-            res.errors?.[0] || res.message || "Не удалось подключить ссылку",
-          );
-        }
-        return res;
+      const trimmedUrl = url.trim();
+      if (!trimmedUrl) {
+        throw new Error("Вставьте ссылку на Google Таблицу с расписанием");
       }
-      if (file) {
-        const res = await uploadScheduleFile(file);
-        if (!res.ok) {
-          throw new Error(
-            res.errors?.[0] || res.message || "Не удалось загрузить файл",
-          );
-        }
-        return res;
+      const res = await createScheduleSource({ url: trimmedUrl });
+      if (!res.ok) {
+        throw new Error(
+          res.errors?.[0] || res.message || "Не удалось подключить ссылку",
+        );
       }
-      throw new Error("Выберите файл Excel (.xlsx) или вставьте ссылку на таблицу");
+      return res;
     },
     onSuccess: async (res) => {
       await Promise.all([
@@ -59,7 +45,6 @@ export function ScheduleUploadSheet({
         queryClient.invalidateQueries({ queryKey: ["groups"] }),
       ]);
       onUploaded?.(res);
-      setFile(null);
       setUrl("");
       onClose();
     },
@@ -68,29 +53,11 @@ export function ScheduleUploadSheet({
     },
   });
 
-  const canSubmit = Boolean(file || url.trim()) && !uploadMutation.isPending;
+  const canSubmit = Boolean(url.trim()) && !uploadMutation.isPending;
 
   return (
     <Sheet open={open} title="Загрузка расписания" onClose={onClose}>
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <Label>Файл Excel</Label>
-          <FileDropzone
-            file={file}
-            onFileChange={(nextFile) => {
-              setFile(nextFile);
-              setError(null);
-            }}
-            disabled={uploadMutation.isPending}
-          />
-        </div>
-
-        <div className="relative flex items-center py-1">
-          <div className="flex-1 border-t border-border-subtle" />
-          <span className="px-3 text-caption text-text-placeholder">или</span>
-          <div className="flex-1 border-t border-border-subtle" />
-        </div>
-
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="schedule-url">Ссылка на таблицу</Label>
           <div className="relative">
@@ -116,11 +83,12 @@ export function ScheduleUploadSheet({
 
         {error && <p className="text-caption text-danger">{error}</p>}
 
-        <div className="mt-1 grid grid-cols-2 gap-2">
+        <div className="mt-2 flex items-center justify-end gap-2 border-t border-border pt-4">
           <Button
             type="button"
             variant="outline"
             size="lg"
+            className="flex-1 sm:flex-none"
             onClick={onClose}
             disabled={uploadMutation.isPending}
           >
@@ -129,6 +97,7 @@ export function ScheduleUploadSheet({
           <Button
             type="button"
             size="lg"
+            className="flex-1 sm:flex-none"
             disabled={!canSubmit}
             onClick={() => uploadMutation.mutate()}
           >

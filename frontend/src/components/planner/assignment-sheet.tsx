@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
+import { AlertCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -52,10 +53,14 @@ export function AssignmentSheet({
       if (!title.trim()) throw new Error("Введите название задания");
       if (!noDate) {
         if (!date && !time) {
-          throw new Error("Укажите дату и время или отметьте «Без дедлайна»");
+          throw new Error(
+            "Укажите дату в формате дд.мм.гггг или отметьте «Без дедлайна»",
+          );
         }
         if (!date) {
-          throw new Error("Укажите дату дедлайна или отметьте «Без дедлайна»");
+          throw new Error(
+            "Укажите дату в формате дд.мм.гггг или отметьте «Без дедлайна»",
+          );
         }
         if (!time) {
           throw new Error("Укажите время дедлайна");
@@ -96,8 +101,9 @@ export function AssignmentSheet({
       open={open}
       onClose={onClose}
       title={deadline ? "Редактирование задания" : "Новое задание"}
+      desktopClassName="sm:max-w-[540px]"
     >
-      <div className="flex flex-col gap-4 rounded-3xl bg-card p-4 ring-1 ring-border">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="assignment-title">
             Название <span className="text-danger">*</span>
@@ -112,14 +118,18 @@ export function AssignmentSheet({
             }}
             aria-invalid={isTitleInvalid}
           />
+          {isTitleInvalid && (
+            <p className="flex items-center gap-1.5 text-caption text-danger">
+              <AlertCircle className="size-3.5 shrink-0" />
+              Введите название задания
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <Label>
-              Дедлайн {!noDate && <span className="text-danger">*</span>}
-            </Label>
-            <Label className="cursor-pointer font-normal text-text-secondary">
+            <Label>Дедлайн</Label>
+            <Label className="cursor-pointer font-normal text-text-main">
               <Checkbox
                 checked={noDate}
                 onCheckedChange={(checked) => {
@@ -130,35 +140,43 @@ export function AssignmentSheet({
               Без дедлайна
             </Label>
           </div>
-          {!noDate ? (
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                type="date"
-                value={date}
-                aria-invalid={isDateInvalid}
-                onChange={(event) => {
-                  setDate(event.target.value);
-                  if (error) setError("");
-                }}
-              />
-              <Input
-                type="time"
-                value={time}
-                aria-invalid={isTimeInvalid}
-                onChange={(event) => {
-                  setTime(event.target.value);
-                  if (error) setError("");
-                }}
-              />
-            </div>
-          ) : (
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              type="date"
+              value={noDate ? "" : date}
+              disabled={noDate}
+              aria-invalid={isDateInvalid}
+              onChange={(event) => {
+                setDate(event.target.value);
+                if (error) setError("");
+              }}
+            />
+            <Input
+              type="time"
+              value={noDate ? "" : time}
+              disabled={noDate}
+              aria-invalid={isTimeInvalid}
+              onChange={(event) => {
+                setTime(event.target.value);
+                if (error) setError("");
+              }}
+            />
+          </div>
+
+          {noDate ? (
             <p className="text-caption text-text-secondary">
               Бессрочное задание: даты и цветового флажка не будет
             </p>
+          ) : (
+            (isDateInvalid || isTimeInvalid) && (
+              <p className="flex items-center gap-1.5 text-caption text-danger">
+                <AlertCircle className="size-3.5 shrink-0" />
+                {error}
+              </p>
+            )
           )}
         </div>
-
-        {error && <p className="text-caption text-danger">{error}</p>}
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="assignment-comment">Комментарий (по желанию)</Label>
@@ -171,37 +189,43 @@ export function AssignmentSheet({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={onClose}
-          >
-            Отмена
-          </Button>
-          <Button
-            type="button"
-            size="lg"
-            disabled={save.isPending}
-            onClick={() => save.mutate()}
-          >
-            Сохранить
-          </Button>
-        </div>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
+          {deadline ? (
+            <Button
+              type="button"
+              variant="destructive"
+              size="lg"
+              disabled={remove.isPending}
+              onClick={() => remove.mutate()}
+            >
+              <Trash2 className="size-4" />
+              Удалить
+            </Button>
+          ) : (
+            <div className="hidden sm:block" />
+          )}
 
-        {deadline && (
-          <Button
-            type="button"
-            variant="destructive"
-            size="lg"
-            className="w-full"
-            disabled={remove.isPending}
-            onClick={() => remove.mutate()}
-          >
-            Удалить
-          </Button>
-        )}
+          <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="flex-1 sm:flex-none"
+              onClick={onClose}
+            >
+              Отмена
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              className="flex-1 sm:flex-none"
+              disabled={save.isPending}
+              onClick={() => save.mutate()}
+            >
+              Сохранить
+            </Button>
+          </div>
+        </div>
       </div>
     </Sheet>
   );

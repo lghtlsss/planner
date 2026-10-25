@@ -1,8 +1,9 @@
 import { apiRequest } from "./client";
-import { ApiError } from "./errors";
 import type { MessageResponse, UpdateUserRequest, User } from "./types";
 
-function formatTimeField(value: string | number | null | undefined): string | null {
+function formatTimeField(
+  value: string | number | null | undefined,
+): string | null {
   if (value == null) return null;
   if (typeof value === "number") {
     return `${String(value).padStart(2, "0")}:00`;
@@ -43,33 +44,11 @@ export async function updateMe(data: UpdateUserRequest): Promise<User> {
       : {}),
   };
 
-  try {
-    const user = await apiRequest<User>("/users/me", {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    });
-    return normalizeUser(user);
-  } catch (err) {
-    if (
-      err instanceof ApiError &&
-      err.status === 422 &&
-      typeof payload.wake_up_time === "string"
-    ) {
-      const wakeUpHour = Number.parseInt(payload.wake_up_time.slice(0, 2), 10);
-      if (!Number.isNaN(wakeUpHour)) {
-        const fallbackPayload: UpdateUserRequest = {
-          ...payload,
-          wake_up_time: wakeUpHour,
-        };
-        const user = await apiRequest<User>("/users/me", {
-          method: "PATCH",
-          body: JSON.stringify(fallbackPayload),
-        });
-        return normalizeUser(user);
-      }
-    }
-    throw err;
-  }
+  const user = await apiRequest<User>("/users/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  return normalizeUser(user);
 }
 
 export function deleteMe(): Promise<MessageResponse> {

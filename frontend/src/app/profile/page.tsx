@@ -69,10 +69,7 @@ export default function ProfilePage() {
   function openSleep() {
     setSleep({
       from: me.data?.go_to_sleep_time ?? "23:00",
-      to:
-        me.data?.wake_up_time != null
-          ? String(me.data.wake_up_time)
-          : "07:00",
+      to: me.data?.wake_up_time ?? "07:00",
     });
     setSleepOpen(true);
   }
@@ -86,65 +83,84 @@ export default function ProfilePage() {
         </Button>
       </div>
 
-      <section className="mt-4 rounded-3xl bg-card p-4 ring-1 ring-border">
-        <h2 className="flex items-center gap-2 text-h3">
-          <UserRound className="size-5 text-primary" /> Личные данные
-        </h2>
-        <Row
-          label="Имя"
-          required
-          loading={me.isPending}
-          value={me.data?.name || "Не указано"}
-          onEdit={openName}
-        />
-        <Row
-          label="Группа"
-          required
-          loading={me.isPending || groupsQuery.isPending}
-          value={currentGroupLabel}
-          onEdit={openGroup}
-          icon={<Users className="size-4" />}
-        />
-        <Row
-          label="Сон"
-          loading={me.isPending}
-          value={
-            me.data?.go_to_sleep_time
-              ? `${me.data.go_to_sleep_time} – ${me.data.wake_up_time}`
-              : "Не указан"
-          }
-          onEdit={openSleep}
-          icon={<Moon className="size-4" />}
-        />
-      </section>
-
-      <section className="mt-4 rounded-3xl bg-card p-4 ring-1 ring-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 text-h3">
-              <CalendarDays className="size-5 text-primary" /> Другие дела
-            </h2>
-            <p className="text-caption text-text-secondary">
-              Повторяются каждую неделю
-            </p>
+      <div className="mt-6 max-w-[740px] space-y-5">
+        <section className="rounded-2xl bg-card ring-1 ring-border">
+          <div className="flex items-center gap-2.5 border-b border-border px-5 py-4">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-brand-primary-light text-brand-primary">
+              <UserRound className="size-4" />
+            </span>
+            <h2 className="text-h3">Личные данные</h2>
           </div>
-          <OpenRoutineFormButton />
+
+          <div className="divide-y divide-border px-5">
+            <Row
+              label="Имя"
+              required
+              loading={me.isPending}
+              value={me.data?.name || "Не указано"}
+              onEdit={openName}
+              icon={<UserRound className="size-4 text-text-secondary" />}
+            />
+            <Row
+              label="Группа"
+              required
+              loading={me.isPending || groupsQuery.isPending}
+              value={currentGroupLabel}
+              onEdit={openGroup}
+              icon={<Users className="size-4 text-text-secondary" />}
+            />
+            <Row
+              label="Сон"
+              loading={me.isPending}
+              value={
+                me.data?.go_to_sleep_time && me.data?.wake_up_time
+                  ? `${me.data.go_to_sleep_time} – ${me.data.wake_up_time}`
+                  : "Не указан"
+              }
+              onEdit={openSleep}
+              icon={<Moon className="size-4 text-text-secondary" />}
+            />
+          </div>
+        </section>
+
+        <section className="rounded-2xl bg-card ring-1 ring-border">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-brand-primary-light text-brand-primary">
+                <CalendarDays className="size-4" />
+              </span>
+              <div>
+                <h2 className="text-h3">Другие дела</h2>
+                <p className="text-caption text-text-secondary">
+                  Повторяются каждую неделю
+                </p>
+              </div>
+            </div>
+            <OpenRoutineFormButton />
+          </div>
+
+          <div className="px-5 py-1">
+            <RoutineList />
+          </div>
+        </section>
+
+        <p className="text-caption text-text-secondary">
+          <span className="text-danger">*</span> обязательное поле
+        </p>
+
+        <div className="pt-1">
+          <Button
+            variant="outline"
+            className="h-11 w-full sm:w-auto sm:px-6"
+            onClick={() => {
+              logout();
+              router.replace("/login");
+            }}
+          >
+            Выйти
+          </Button>
         </div>
-
-        <RoutineList />
-      </section>
-
-      <p className="mt-3 text-caption text-danger">* обязательное поле</p>
-      <Button
-        variant="outline"
-        className="mt-4 h-11 w-full"
-        onClick={() => {
-          logout();
-          router.replace("/login");
-        }}
-      >
-        Выйти
-      </Button>
+      </div>
 
       <Sheet open={nameOpen} title="Имя" onClose={() => setNameOpen(false)}>
         <div className="flex flex-col gap-1.5">
@@ -158,16 +174,18 @@ export default function ProfilePage() {
             placeholder="Как к вам обращаться"
           />
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-4">
           <Button
             variant="outline"
             size="lg"
+            className="flex-1 sm:flex-none"
             onClick={() => setNameOpen(false)}
           >
             Отмена
           </Button>
           <Button
             size="lg"
+            className="flex-1 sm:flex-none"
             disabled={saveUser.isPending || !name.trim()}
             onClick={() => saveUser.mutate({ name: name.trim() })}
           >
@@ -192,7 +210,9 @@ export default function ProfilePage() {
             onChange={(event) => {
               const raw = event.target.value;
               const parsed = raw ? Number.parseInt(raw, 10) : null;
-              setGroupId(parsed != null && !Number.isNaN(parsed) ? parsed : null);
+              setGroupId(
+                parsed != null && !Number.isNaN(parsed) ? parsed : null,
+              );
             }}
             disabled={groupsQuery.isLoading || saveUser.isPending}
             className="h-10 w-full rounded-[10px] border border-border-subtle bg-surface px-3 py-2 text-[15px] leading-[22px] text-text-main transition-colors outline-none focus-visible:border-brand-primary focus-visible:ring-3 focus-visible:ring-brand-primary/20 disabled:cursor-not-allowed disabled:bg-bg-page disabled:text-text-placeholder"
@@ -213,16 +233,18 @@ export default function ProfilePage() {
             </p>
           )}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-4">
           <Button
             variant="outline"
             size="lg"
+            className="flex-1 sm:flex-none"
             onClick={() => setGroupOpen(false)}
           >
             Отмена
           </Button>
           <Button
             size="lg"
+            className="flex-1 sm:flex-none"
             disabled={
               saveUser.isPending ||
               typeof groupId !== "number" ||
@@ -270,16 +292,18 @@ export default function ProfilePage() {
             />
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-4">
           <Button
             variant="outline"
             size="lg"
+            className="flex-1 sm:flex-none"
             onClick={() => setSleepOpen(false)}
           >
             Отмена
           </Button>
           <Button
             size="lg"
+            className="flex-1 sm:flex-none"
             disabled={saveUser.isPending}
             onClick={() =>
               saveUser.mutate({
@@ -317,15 +341,19 @@ function Row({
   icon?: ReactNode;
 }) {
   return (
-    <div className="mt-4 flex items-center justify-between gap-3">
-      <div>
-        <p className="flex items-center gap-2 text-caption text-text-secondary">
-          {icon} {label} {required && <span className="text-danger">*</span>}
+    <div className="flex items-center justify-between gap-4 py-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-6">
+        <p className="flex w-36 shrink-0 items-center gap-2 text-[14px] text-text-secondary">
+          {icon}
+          <span>{label}</span>
+          {required && <span className="text-danger">*</span>}
         </p>
         {loading ? (
-          <Skeleton className="mt-1 h-5 w-32 rounded-md" />
+          <Skeleton className="h-5 w-36 rounded-md" />
         ) : (
-          <p className="text-[16px] text-text-main">{value}</p>
+          <p className="truncate text-[15px] font-medium text-text-main">
+            {value}
+          </p>
         )}
       </div>
       <Button
