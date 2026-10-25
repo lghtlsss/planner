@@ -80,17 +80,20 @@ export default function SchedulePage() {
     hasGroup && scheduleQuery.data && scheduleQuery.data.days.length > 0,
   );
 
-  // Собираем временные слоты для десктопной таблицы (стандартные + все слоты из API)
+  // Собираем временные слоты для десктопной таблицы из реальных пар недели
+  // (и используем дефолтную сетку звонков только если на неделе нет ни одной пары)
   const slotMap = new Map<string, { start: string; end: string }>();
-  for (const slot of DEFAULT_BELL_SLOTS) {
-    slotMap.set(`${slot.start}-${slot.end}`, slot);
-  }
   for (const d of scheduleQuery.data?.days ?? []) {
     for (const lesson of d.lessons) {
       if (!lesson.subject) continue;
       const start = lesson.start_time.slice(0, 5);
       const end = lesson.end_time.slice(0, 5);
       slotMap.set(`${start}-${end}`, { start, end });
+    }
+  }
+  if (slotMap.size === 0) {
+    for (const slot of DEFAULT_BELL_SLOTS) {
+      slotMap.set(`${slot.start}-${slot.end}`, slot);
     }
   }
   const timeSlots = Array.from(slotMap.values()).sort((a, b) =>
