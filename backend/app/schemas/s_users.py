@@ -6,6 +6,7 @@ from .s_auth import SToken
 class SUserResponse(BaseModel):
     name: str | None = None
     email: str
+    group_id: str | None = None
     go_to_sleep_time: time | None = None
     wake_up_time: time | None = None
     profile_completed: bool
@@ -29,6 +30,7 @@ class SUserUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2)
     email: str | None = None
     password: str | None = Field(default=None, min_length=8)
+    group_id: str | None = None
     go_to_sleep_time: time | None = None
     wake_up_time: time | None = None
 
