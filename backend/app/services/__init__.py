@@ -5,3 +5,5 @@ from app.services.deadline_service import get_deadline_for_user, get_all_deadlin
 from app.services.users_service import user_update_serv
 from app.services.task_service import (update_task_serv, delete_task_serv, get_task_serv,
                                        create_task_serv, get_task_by_date_serv, get_tasks_from_to_serv)
+from app.services.routines_service import (get_routine_by_id_serv, get_routine_by_day_serv,
+                                           create_routine_serv, update_routine_serv, delete_routine_serv)

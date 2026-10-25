@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routers import (
     users_router, auth_router, events_router, deadline_router,
-    catalog_router, schedule_router, sources_router, tasks_router,
+    catalog_router, schedule_router, sources_router, tasks_router, routines_router,
 )
 
 app = FastAPI()
@@ -24,6 +24,7 @@ app.include_router(catalog_router)
 app.include_router(schedule_router)
 app.include_router(sources_router)
 app.include_router(tasks_router)
+app.include_router(routines_router)
 
 
 @app.get("/about_us")

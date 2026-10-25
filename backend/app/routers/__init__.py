@@ -6,3 +6,4 @@ from app.routers.catalog import router as catalog_router
 from app.routers.schedule import router as schedule_router
 from app.routers.sources import router as sources_router
 from app.routers.tasks import router as tasks_router
+from app.routers.routines import router as routines_router
