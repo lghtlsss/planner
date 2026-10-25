@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_user
 from app.database import get_db
-from app.models import User, Task
+from app.models import User
 from app.schemas import STaskUpdate, STaskCreate, STaskResponse, SListTaskResponse
 
-from app.services import create_task_serv, delete_task_serv, get_task_serv, update_task_serv, get_task_by_date_serv
+from app.services import create_task_serv, delete_task_serv, get_task_serv, update_task_serv, get_task_by_date_serv, \
+    get_tasks_from_to_serv
 from datetime import date
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
@@ -20,6 +21,12 @@ def get_task(task_id: int, current_user: User = Depends(get_current_user), db: S
 @router.get("/by_date", response_model=SListTaskResponse)
 def get_task_by_date(task_date: date, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return get_task_by_date_serv(task_date, current_user, db)
+
+
+@router.get("/from_to", response_model=SListTaskResponse)
+def get_task_from_to(start_date: date, end_date: date, current_user: User = Depends(get_current_user),
+                     db: Session = Depends(get_db)):
+    return get_tasks_from_to_serv(start_date, end_date, current_user, db)
 
 
 @router.post("", response_model=STaskResponse)

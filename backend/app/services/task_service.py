@@ -100,3 +100,16 @@ def get_task_by_date_serv(task_date: date, current_user: User, db: Session):
             Task.user_id == current_user.id,
         )
     ).scalars().all()}
+
+
+def get_tasks_from_to_serv(start_date: date, end_date: date, current_user: User, db: Session):
+    if start_date >= end_date:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Start date can not be later than end date")
+
+    return {"tasks": db.execute(
+        select(Task).where(
+            Task.task_date >= start_date,
+            Task.task_date <= end_date,
+            Task.user_id == current_user.id
+        )
+    ).scalars().all()}
