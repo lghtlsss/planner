@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "planner-app",
-  "version": "0.1.0",
+  "productName": "Personal Planner",
+  "version": "1.0.0",
   "identifier": "com.planner.dev",
   "build": {
     "frontendDist": "../out",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "planner app",
+        "title": "Personal Planner",
         "width": 800,
         "height": 600,
         "resizable": true,
