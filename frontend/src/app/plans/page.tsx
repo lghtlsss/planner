@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
+  getDeadlines,
   getEvents,
   getMe,
   getRoutines,
   getScheduleForUser,
+  getTasksFromTo,
   type DayOfWeek,
 } from "@/lib/api";
 import {
@@ -49,14 +51,26 @@ export default function PlansPage() {
   const [showPairs, setShowPairs] = useState(true);
   const [showRoutines, setShowRoutines] = useState(true);
 
-  const me = useQuery({ queryKey: ["me"], queryFn: getMe });
-  const events = useQuery({ queryKey: ["events"], queryFn: getEvents });
-  const routines = useQuery({ queryKey: ["routines"], queryFn: getRoutines });
-
   const days = Array.from({ length: 7 }, (_, index) => addDays(week, index));
   const end = addDays(week, 6);
   const dateFrom = isoDate(week);
   const dateTo = isoDate(end);
+
+  const me = useQuery({ queryKey: ["me"], queryFn: getMe });
+  const events = useQuery({ queryKey: ["events"], queryFn: getEvents });
+  const tasks = useQuery({
+    queryKey: ["tasks", dateFrom, dateTo],
+    queryFn: () => getTasksFromTo(dateFrom, dateTo),
+  });
+  const deadlines = useQuery({
+    queryKey: ["deadlines"],
+    queryFn: getDeadlines,
+  });
+  const routines = useQuery({ queryKey: ["routines"], queryFn: getRoutines });
+
+  const deadlinesById = new Map(
+    (deadlines.data ?? []).map((item) => [item.id, item]),
+  );
 
   const groupId = me.data?.group_id ?? null;
 
@@ -134,22 +148,38 @@ export default function PlansPage() {
             }
           }
 
-          // 2. Запланированные задачи на этот день (/events — отображаются всегда)
+          // 2. Запланированные задачи из дедлайнов (/tasks — отображаются всегда)
+          const dayTasks = (tasks.data ?? []).filter((task) =>
+            eventOnDay(task.task_date, day),
+          );
+          for (const task of dayTasks) {
+            const linkedDeadline = deadlinesById.get(task.deadline_id);
+            slots.push({
+              key: `task-${task.id}`,
+              kind: "task",
+              start_time: task.start_time.slice(0, 5),
+              end_time: task.potential_end_time.slice(0, 5),
+              title: task.title,
+              hasComment: Boolean(linkedDeadline?.comment),
+            });
+          }
+
+          // 3. Разовые задачи на этот день (/events — отображаются всегда)
           const dayEvents = (events.data ?? []).filter((event) =>
             eventOnDay(event.event_date, day),
           );
           for (const event of dayEvents) {
             slots.push({
-              key: `task-${event.id}`,
+              key: `event-${event.id}`,
               kind: "task",
               start_time: event.start_time.slice(0, 5),
-              end_time: event.end_time.slice(0, 5),
+              end_time: event.end_time ? event.end_time.slice(0, 5) : "",
               title: event.name,
-              hasComment: Boolean(event.comment),
+              hasComment: false,
             });
           }
 
-          // 3. Постоянные дела (/routines — управляются ТОЛЬКО чекбоксом «Отображать дела»)
+          // 4. Постоянные дела (/routines — управляются ТОЛЬКО чекбоксом «Отображать дела»)
           if (showRoutines) {
             const dayRoutines = (routines.data ?? []).filter((r) =>
               r.days.includes(dayKey),
@@ -160,7 +190,7 @@ export default function PlansPage() {
                 kind: "delo",
                 start_time: routine.start_time.slice(0, 5),
                 end_time: routine.end_time.slice(0, 5),
-                title: routine.name,
+                title: routine.title,
               });
             }
           }
@@ -198,7 +228,8 @@ export default function PlansPage() {
                   >
                     <div className="min-w-0 truncate">
                       <span className="text-text-secondary">
-                        {slot.start_time}–{slot.end_time}{" "}
+                        {slot.start_time}
+                        {slot.end_time ? `–${slot.end_time}` : ""}{" "}
                       </span>
                       <span className="font-medium text-text-main">
                         {slot.title}

@@ -3,21 +3,18 @@ export type Difficulty = "easy" | "medium" | "hard" | "very_hard";
 // ---------- Auth & User ----------
 
 export interface User {
-  name: string;
-  surname?: string | null;
+  name: string | null;
   email: string;
   group_id: number | null;
-  sleepTimeHours: number | null;
-  goToSleepTime: string | null;
-  wakeUpTime: string | null;
-  is_profile_completed?: boolean;
+  sleep_time_hours: number | null;
+  go_to_sleep_time: string | null;
+  wake_up_time: string | number | null;
+  profile_completed: boolean;
 }
 
 export interface RegisterRequest {
   email: string;
   password: string;
-  name?: string;
-  surname?: string;
 }
 
 export interface LoginRequest {
@@ -28,16 +25,21 @@ export interface LoginRequest {
 export interface TokenResponse {
   access_token: string;
   token_type: string;
-  user?: User;
+}
+
+export interface RegisterResponse {
+  user: User;
+  token: TokenResponse;
 }
 
 export interface UpdateUserRequest {
-  name?: string;
-  surname?: string | null;
+  name?: string | null;
+  email?: string | null;
+  password?: string | null;
   group_id?: number | null;
-  goToSleepTime?: string | null;
-  wakeUpTime?: string | null;
-  sleepTimeHours?: number | null;
+  sleep_time_hours?: number | null;
+  go_to_sleep_time?: string | null;
+  wake_up_time?: string | number | null;
 }
 
 // ---------- Routines (/routines) ----------
@@ -53,45 +55,35 @@ export type DayOfWeek =
 
 export interface Routine {
   id: number;
-  name: string;
+  title: string;
   days: DayOfWeek[];
   start_time: string;
   end_time: string;
 }
 
 export interface CreateRoutineRequest {
-  name: string;
+  title: string;
   days: DayOfWeek[];
   start_time: string;
   end_time: string;
 }
 
 export interface UpdateRoutineRequest {
-  name?: string;
-  days?: DayOfWeek[];
-  start_time?: string;
-  end_time?: string;
+  title?: string | null;
+  days?: DayOfWeek[] | null;
+  start_time?: string | null;
+  end_time?: string | null;
 }
 
-// ---------- Events (/events) ----------
+// ---------- Events (/events — разовые задачи без дедлайна) ----------
 
 export interface Event {
   id: number;
   name: string;
   description: string | null;
   start_time: string;
-  end_time: string;
+  end_time: string | null;
   event_date: string;
-  deadline_id?: number | null;
-  comment?: string | null;
-  expire_date?: string | null;
-  completed?: boolean;
-}
-
-export interface GetEventsParams {
-  date?: string;
-  start_date?: string;
-  end_date?: string;
 }
 
 export interface CreateEventRequest {
@@ -100,24 +92,45 @@ export interface CreateEventRequest {
   start_time: string;
   end_time: string;
   event_date: string;
-  deadline_id?: number | null;
 }
 
 export interface UpdateEventRequest {
-  name?: string;
+  name?: string | null;
   description?: string | null;
-  start_time?: string;
-  end_time?: string;
-  event_date?: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  event_date?: string | null;
+}
+
+// ---------- Tasks (/tasks — задачи на день из дедлайнов) ----------
+
+export interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  start_time: string;
+  potential_end_time: string;
+  task_date: string;
+  deadline_id: number;
+}
+
+export interface CreateTaskRequest {
+  title: string;
+  description?: string | null;
+  start_time: string;
+  potential_end_time: string;
+  task_date: string;
+  deadline_id: number;
+}
+
+export interface UpdateTaskRequest {
+  title?: string | null;
+  description?: string | null;
+  start_time?: string | null;
+  potential_end_time?: string | null;
+  task_date?: string | null;
   deadline_id?: number | null;
 }
-
-export interface CreateEventResponse {
-  event: Event;
-  intersection: boolean;
-}
-
-export type UpdateEventResponse = CreateEventResponse;
 
 // ---------- Deadlines (/deadlines) ----------
 
@@ -131,8 +144,8 @@ export interface Deadline {
   tag: string | null;
   comment: string | null;
   send_notification: boolean;
-  completed?: boolean;
-  completed_at?: string | null;
+  completed: boolean;
+  completed_at: string | null;
 }
 
 export interface CreateDeadlineRequest {
@@ -147,19 +160,20 @@ export interface CreateDeadlineRequest {
 }
 
 export interface UpdateDeadlineRequest {
-  title?: string;
+  title?: string | null;
   description?: string | null;
   expire_date?: string | null;
-  repeat?: boolean;
+  repeat?: boolean | null;
   difficulty?: Difficulty | null;
   tag?: string | null;
   comment?: string | null;
-  send_notification?: boolean;
-  completed?: boolean;
+  send_notification?: boolean | null;
+  completed?: boolean | null;
+  completed_at?: string | null;
 }
 
 export interface MessageResponse {
-  message: string;
+  message?: string;
 }
 
 // ---------- Catalog & Schedule (/faculties, /programs, /groups, /schedule, /sources) ----------

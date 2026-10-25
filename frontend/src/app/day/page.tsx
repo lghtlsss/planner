@@ -15,16 +15,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  getEvents,
+  getDeadlines,
+  getEventsByDate,
   getMe,
-  getRoutines,
+  getRoutinesByDay,
   getScheduleForUser,
+  getTasksByDate,
   type DayOfWeek,
 } from "@/lib/api";
 import {
   dayTitle,
   eventClock,
-  eventOnDay,
   isoDate,
   pillDate,
 } from "@/lib/urgency";
@@ -56,8 +57,22 @@ function DayContent() {
   const day = new Date(`${date}T00:00:00`);
   const dayOfWeek = JS_DAY_TO_KEY[day.getDay()];
 
-  const events = useQuery({ queryKey: ["events"], queryFn: getEvents });
-  const routines = useQuery({ queryKey: ["routines"], queryFn: getRoutines });
+  const events = useQuery({
+    queryKey: ["events", date],
+    queryFn: () => getEventsByDate(date),
+  });
+  const tasks = useQuery({
+    queryKey: ["tasks", date],
+    queryFn: () => getTasksByDate(date),
+  });
+  const deadlines = useQuery({
+    queryKey: ["deadlines"],
+    queryFn: getDeadlines,
+  });
+  const routines = useQuery({
+    queryKey: ["routines", dayOfWeek],
+    queryFn: () => getRoutinesByDay(dayOfWeek),
+  });
   const me = useQuery({ queryKey: ["me"], queryFn: getMe });
 
   const groupId = me.data?.group_id ?? null;
@@ -71,6 +86,10 @@ function DayContent() {
       }),
     enabled: groupId != null,
   });
+
+  const deadlinesById = new Map(
+    (deadlines.data ?? []).map((item) => [item.id, item]),
+  );
 
   const timelineItems: DayTimelineItem[] = [];
 
@@ -97,35 +116,43 @@ function DayContent() {
     });
   }
 
-  // 2. Запланированные на этот день задачи (/events)
-  const dayEvents = (events.data ?? []).filter((event) =>
-    eventOnDay(event.event_date, day),
-  );
-  for (const event of dayEvents) {
+  // 2. Запланированные на этот день задачи из дедлайнов (/tasks)
+  for (const task of tasks.data ?? []) {
+    const linkedDeadline = deadlinesById.get(task.deadline_id);
     timelineItems.push({
-      key: `task-${event.id}`,
+      key: `task-${task.id}`,
       kind: "task",
-      start_time: eventClock(event.start_time),
-      end_time: eventClock(event.end_time),
-      title: event.name,
-      subtitle: event.expire_date
-        ? `Дедлайн ${pillDate(event.expire_date)}`
-        : event.description || null,
-      comment: event.comment ?? null,
+      start_time: eventClock(task.start_time),
+      end_time: eventClock(task.potential_end_time),
+      title: task.title,
+      subtitle: linkedDeadline?.expire_date
+        ? `Дедлайн ${pillDate(linkedDeadline.expire_date)}`
+        : task.description || linkedDeadline?.description || null,
+      comment: linkedDeadline?.comment ?? null,
     });
   }
 
-  // 3. Постоянные дела на этот день недели (/routines)
-  const dayRoutines = (routines.data ?? []).filter((r) =>
-    r.days.includes(dayOfWeek),
-  );
-  for (const routine of dayRoutines) {
+  // 3. Разовые задачи на этот день (/events)
+  for (const event of events.data ?? []) {
+    timelineItems.push({
+      key: `event-${event.id}`,
+      kind: "task",
+      start_time: eventClock(event.start_time),
+      end_time: event.end_time ? eventClock(event.end_time) : "",
+      title: event.name,
+      subtitle: event.description || null,
+      comment: null,
+    });
+  }
+
+  // 4. Постоянные дела на этот день недели (/routines)
+  for (const routine of routines.data ?? []) {
     timelineItems.push({
       key: `delo-${routine.id}`,
       kind: "delo",
       start_time: eventClock(routine.start_time),
       end_time: eventClock(routine.end_time),
-      title: routine.name,
+      title: routine.title,
       subtitle: "Постоянное дело",
     });
   }
@@ -147,10 +174,10 @@ function DayContent() {
       <h1 className="mt-2 text-h1">{dayTitle(day)}</h1>
 
       <div className="mt-4 space-y-3">
-        {me.data?.wakeUpTime && (
+        {me.data?.wake_up_time != null && (
           <p className="flex items-center gap-2 rounded-2xl border-l-4 border-sleep-bar bg-sleep-bg px-3 py-2 text-[13px] font-medium text-text-secondary">
             <Moon className="size-4 text-sleep-bar" />
-            Сон · до {me.data.wakeUpTime}
+            Сон · до {me.data.wake_up_time}
           </p>
         )}
 
@@ -227,10 +254,10 @@ function DayContent() {
           </article>
         ))}
 
-        {me.data?.goToSleepTime && (
+        {me.data?.go_to_sleep_time && (
           <p className="flex items-center gap-2 rounded-2xl border-l-4 border-sleep-bar bg-sleep-bg px-3 py-2 text-[13px] font-medium text-text-secondary">
             <Moon className="size-4 text-sleep-bar" />
-            Сон · с {me.data.goToSleepTime}
+            Сон · с {me.data.go_to_sleep_time}
           </p>
         )}
       </div>

@@ -38,7 +38,7 @@ export function RoutineForm({
   const { handleSubmit, control, reset } = useForm<RoutineFormValues>({
     resolver: zodResolver(routineSchema),
     defaultValues: {
-      name: initialRoutine?.name ?? "",
+      title: initialRoutine?.title ?? "",
       days: initialRoutine?.days ?? [],
       start_time: initialRoutine?.start_time?.slice(0, 5) ?? "18:00",
       end_time: initialRoutine?.end_time?.slice(0, 5) ?? "20:00",
@@ -48,7 +48,7 @@ export function RoutineForm({
   const { mutate, isPending, error } = useMutation({
     mutationFn: (values: RoutineFormValues) => {
       const payload = {
-        name: values.name.trim(),
+        title: values.title.trim(),
         days: values.days,
         start_time: values.start_time,
         end_time: values.end_time,
@@ -77,15 +77,15 @@ export function RoutineForm({
     >
       <FieldGroup className="gap-4">
         <Controller
-          name="name"
+          name="title"
           control={control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="routine-name">
+              <FieldLabel htmlFor="routine-title">
                 Название <span className="text-danger">*</span>
               </FieldLabel>
               <Input
-                id="routine-name"
+                id="routine-title"
                 type="text"
                 placeholder="Например, секция"
                 disabled={isPending}

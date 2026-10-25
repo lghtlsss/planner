@@ -50,7 +50,7 @@ export function RoutineList({
     <ul className="mt-3 space-y-3 text-left">
       {routines.map((item) => (
         <li key={item.id} className="border-l-4 border-delo-bar pl-3">
-          <p className="font-semibold text-text-main">{item.name}</p>
+          <p className="font-semibold text-text-main">{item.title}</p>
           <p className="text-caption text-text-secondary">
             {formatRoutineDays(item.days)} · {item.start_time.slice(0, 5)}–
             {item.end_time.slice(0, 5)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { createEvent, type Event } from "@/lib/api";
+import { createEvent, createTask } from "@/lib/api";
 import { EventFormValues, eventSchema } from "./schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -33,14 +33,33 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
     });
 
   const { mutate, isPending, error } = useMutation({
-    mutationFn: createEvent,
-    onSuccess: async (res) => {
-      queryClient.setQueryData<Event[]>(["events"], (old) => {
-        if (!old) return [res.event];
-        if (old.some((item) => item.id === res.event.id)) return old;
-        return [...old, res.event];
+    mutationFn: async (data: EventFormValues) => {
+      const targetDate = eventDate ?? isoDate(new Date());
+
+      if (data.isEventOnThisDay) {
+        return createEvent({
+          name: data.name!.trim(),
+          start_time: data.start,
+          end_time: data.end,
+          event_date: targetDate,
+        });
+      }
+
+      const deadline = data.deadline!;
+      return createTask({
+        title: deadline.title,
+        description: deadline.description ?? null,
+        start_time: data.start,
+        potential_end_time: data.end,
+        task_date: targetDate,
+        deadline_id: deadline.id,
       });
-      await queryClient.invalidateQueries({ queryKey: ["events"] });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["events"] }),
+        queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+      ]);
       reset();
       onSuccess?.();
     },
@@ -54,19 +73,7 @@ export const EventForm = ({ eventDate, onSuccess }: EventFormProps) => {
   };
 
   const onSubmit = (data: EventFormValues) => {
-    const name = data.isEventOnThisDay
-      ? data.name!.trim()
-      : data.deadline!.title;
-
-    const targetDate = eventDate ?? isoDate(new Date());
-
-    mutate({
-      name,
-      start_time: data.start,
-      end_time: data.end,
-      event_date: targetDate,
-      deadline_id: data.isEventOnThisDay ? null : (data.deadline?.id ?? null),
-    });
+    mutate(data);
   };
 
   return (
