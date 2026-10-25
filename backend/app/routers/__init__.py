@@ -5,3 +5,4 @@ from app.routers.deadline import router as deadline_router
 from app.routers.catalog import router as catalog_router
 from app.routers.schedule import router as schedule_router
 from app.routers.sources import router as sources_router
+from app.routers.tasks import router as tasks_router
