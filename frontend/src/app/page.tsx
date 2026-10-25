@@ -23,19 +23,18 @@ import {
 } from "@/components/ui/popover";
 import {
   getDeadlines,
-  getEvents,
+  getEventsByDate,
   getMe,
-  getRoutines,
+  getRoutinesByDay,
   getScheduleForUser,
+  getTasksByDate,
   updateDeadline,
   type DayOfWeek,
   type Deadline,
-  type Event,
 } from "@/lib/api";
 import {
   dayTitle,
   eventClock,
-  eventOnDay,
   greetingForNow,
   isoDate,
   pillDate,
@@ -71,12 +70,22 @@ export default function HomePage() {
   const todayWeekday = JS_DAY_TO_KEY[today.getDay()];
 
   const me = useQuery({ queryKey: ["me"], queryFn: getMe });
-  const events = useQuery({ queryKey: ["events"], queryFn: getEvents });
+  const events = useQuery({
+    queryKey: ["events", todayIso],
+    queryFn: () => getEventsByDate(todayIso),
+  });
+  const tasks = useQuery({
+    queryKey: ["tasks", todayIso],
+    queryFn: () => getTasksByDate(todayIso),
+  });
   const deadlines = useQuery({
     queryKey: ["deadlines"],
     queryFn: getDeadlines,
   });
-  const routines = useQuery({ queryKey: ["routines"], queryFn: getRoutines });
+  const routines = useQuery({
+    queryKey: ["routines", todayWeekday],
+    queryFn: () => getRoutinesByDay(todayWeekday),
+  });
 
   const groupId = me.data?.group_id ?? null;
 
@@ -102,13 +111,17 @@ export default function HomePage() {
     if (
       me.isSuccess &&
       me.data &&
-      (me.data.is_profile_completed === false ||
+      (me.data.profile_completed === false ||
         !me.data.name?.trim() ||
         me.data.group_id == null)
     ) {
       router.replace("/onboarding");
     }
   }, [me.isSuccess, me.data, router]);
+
+  const deadlinesById = new Map(
+    (deadlines.data ?? []).map((item) => [item.id, item]),
+  );
 
   const timelineItems: TodayTimelineItem[] = [];
 
@@ -131,31 +144,40 @@ export default function HomePage() {
     });
   }
 
-  for (const event of (events.data ?? []).filter((e: Event) =>
-    eventOnDay(e.event_date, today),
-  )) {
+  for (const task of tasks.data ?? []) {
+    const linkedDeadline = deadlinesById.get(task.deadline_id);
+    timelineItems.push({
+      key: `task-${task.id}`,
+      kind: "task",
+      start_time: eventClock(task.start_time),
+      end_time: eventClock(task.potential_end_time),
+      title: task.title,
+      subtitle: linkedDeadline?.expire_date
+        ? `Дедлайн ${pillDate(linkedDeadline.expire_date)}`
+        : task.description || linkedDeadline?.description || null,
+      comment: linkedDeadline?.comment ?? null,
+    });
+  }
+
+  for (const event of events.data ?? []) {
     timelineItems.push({
       key: `event-${event.id}`,
       kind: "task",
       start_time: eventClock(event.start_time),
-      end_time: eventClock(event.end_time),
+      end_time: event.end_time ? eventClock(event.end_time) : "",
       title: event.name,
-      subtitle: event.expire_date
-        ? `Дедлайн ${pillDate(event.expire_date)}`
-        : event.description || null,
-      comment: event.comment ?? null,
+      subtitle: event.description || null,
+      comment: null,
     });
   }
 
-  for (const routine of (routines.data ?? []).filter((r) =>
-    r.days.includes(todayWeekday),
-  )) {
+  for (const routine of routines.data ?? []) {
     timelineItems.push({
       key: `routine-${routine.id}`,
       kind: "delo",
       start_time: eventClock(routine.start_time),
       end_time: eventClock(routine.end_time),
-      title: routine.name,
+      title: routine.title,
       subtitle: "Постоянное дело",
     });
   }

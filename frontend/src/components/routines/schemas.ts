@@ -30,7 +30,7 @@ export function formatRoutineDays(days: DayOfWeek[]): string {
 
 export const routineSchema = z
   .object({
-    name: z.string().trim().min(1, "Введите название дела"),
+    title: z.string().trim().min(1, "Введите название дела"),
     days: z
       .array(z.enum(DAY_VALUES))
       .min(1, "Выберите хотя бы один день"),

@@ -4,6 +4,7 @@ export * from "./client";
 export * from "./auth";
 export * from "./users";
 export * from "./events";
+export * from "./tasks";
 export * from "./deadlines";
 export * from "./routines";
 export * from "./schedule";

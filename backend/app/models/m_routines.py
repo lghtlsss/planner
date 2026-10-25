@@ -1,5 +1,6 @@
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import String, ForeignKey, ARRAY, Enum as SQLEnum, Time
+from sqlalchemy import String, ForeignKey, Enum as SQLEnum, Time
+from sqlalchemy.dialects.postgresql import ARRAY
 from app.database import Base
 from app.enums import DayOfWeek
 from datetime import time

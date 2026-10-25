@@ -3,21 +3,24 @@ import { clearSession, setSession } from "../session";
 import type {
   LoginRequest,
   RegisterRequest,
+  RegisterResponse,
   TokenResponse,
-  User,
 } from "./types";
 
 export async function register(
   data: RegisterRequest,
-): Promise<TokenResponse | User> {
-  const response = await apiRequest<TokenResponse | User>("/auth/register", {
+): Promise<RegisterResponse> {
+  const response = await apiRequest<RegisterResponse>("/auth/register", {
     method: "POST",
     auth: false,
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      email: data.email,
+      password: data.password,
+    }),
   });
 
-  if ("access_token" in response && response.access_token) {
-    setSession(response.access_token);
+  if (response.token?.access_token) {
+    setSession(response.token.access_token);
   } else {
     await login({ email: data.email, password: data.password });
   }

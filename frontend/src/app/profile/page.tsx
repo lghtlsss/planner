@@ -67,8 +67,11 @@ export default function ProfilePage() {
 
   function openSleep() {
     setSleep({
-      from: me.data?.goToSleepTime ?? "23:00",
-      to: me.data?.wakeUpTime ?? "07:00",
+      from: me.data?.go_to_sleep_time ?? "23:00",
+      to:
+        me.data?.wake_up_time != null
+          ? String(me.data.wake_up_time)
+          : "07:00",
     });
     setSleepOpen(true);
   }
@@ -102,8 +105,8 @@ export default function ProfilePage() {
         <Row
           label="Сон"
           value={
-            me.data?.goToSleepTime
-              ? `${me.data.goToSleepTime} – ${me.data.wakeUpTime}`
+            me.data?.go_to_sleep_time
+              ? `${me.data.go_to_sleep_time} – ${me.data.wake_up_time}`
               : "Не указан"
           }
           onEdit={openSleep}
@@ -265,8 +268,8 @@ export default function ProfilePage() {
             disabled={saveUser.isPending}
             onClick={() =>
               saveUser.mutate({
-                goToSleepTime: sleep.from,
-                wakeUpTime: sleep.to,
+                go_to_sleep_time: sleep.from,
+                wake_up_time: sleep.to,
               })
             }
           >

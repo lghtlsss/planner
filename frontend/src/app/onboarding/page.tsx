@@ -150,8 +150,8 @@ export default function OnboardingPage() {
               <Moon className="size-4" /> Сон
             </p>
             <p className="text-body text-text-main">
-              {me.data?.goToSleepTime
-                ? `${me.data.goToSleepTime} – ${me.data.wakeUpTime}`
+              {me.data?.go_to_sleep_time
+                ? `${me.data.go_to_sleep_time} – ${me.data.wake_up_time}`
                 : "Не указан"}
             </p>
           </div>
@@ -244,8 +244,8 @@ export default function OnboardingPage() {
             disabled={saveSleep.isPending}
             onClick={() =>
               saveSleep.mutate({
-                goToSleepTime: sleep.from,
-                wakeUpTime: sleep.to,
+                go_to_sleep_time: sleep.from,
+                wake_up_time: sleep.to,
               })
             }
           >
