@@ -43,22 +43,27 @@ export function AssignmentSheet({
     deadline ? deadline.expire_date == null : false,
   );
   const [date, setDate] = useState(initial.date);
-  const [time, setTime] = useState(
-    initial.time === "23:59" ? "" : initial.time,
-  );
+  const [time, setTime] = useState(initial.time);
   const [comment, setComment] = useState(deadline?.comment ?? "");
   const [error, setError] = useState("");
 
   const save = useMutation({
     mutationFn: async () => {
       if (!title.trim()) throw new Error("Введите название задания");
-      if (!noDate && !date) {
-        throw new Error("Укажите дату или отметьте «Без дедлайна»");
+      if (!noDate) {
+        if (!date && !time) {
+          throw new Error("Укажите дату и время или отметьте «Без дедлайна»");
+        }
+        if (!date) {
+          throw new Error("Укажите дату дедлайна или отметьте «Без дедлайна»");
+        }
+        if (!time) {
+          throw new Error("Укажите время дедлайна");
+        }
       }
-      const expire_date =
-        noDate || !date
-          ? null
-          : new Date(`${date}T${time || "23:59"}`).toISOString();
+      const expire_date = noDate
+        ? null
+        : new Date(`${date}T${time}`).toISOString();
       const payload = {
         title: title.trim(),
         expire_date,
@@ -82,6 +87,10 @@ export function AssignmentSheet({
     },
   });
 
+  const isTitleInvalid = Boolean(error && !title.trim());
+  const isDateInvalid = Boolean(error && !noDate && !date);
+  const isTimeInvalid = Boolean(error && !noDate && !time);
+
   return (
     <Sheet
       open={open}
@@ -97,19 +106,26 @@ export function AssignmentSheet({
             id="assignment-title"
             placeholder="Например, реферат по истории"
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            aria-invalid={Boolean(error)}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              if (error) setError("");
+            }}
+            aria-invalid={isTitleInvalid}
           />
-          {error && <p className="text-caption text-danger">{error}</p>}
         </div>
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <Label>Дедлайн</Label>
+            <Label>
+              Дедлайн {!noDate && <span className="text-danger">*</span>}
+            </Label>
             <Label className="cursor-pointer font-normal text-text-secondary">
               <Checkbox
                 checked={noDate}
-                onCheckedChange={(checked) => setNoDate(Boolean(checked))}
+                onCheckedChange={(checked) => {
+                  setNoDate(Boolean(checked));
+                  if (error) setError("");
+                }}
               />
               Без дедлайна
             </Label>
@@ -119,12 +135,20 @@ export function AssignmentSheet({
               <Input
                 type="date"
                 value={date}
-                onChange={(event) => setDate(event.target.value)}
+                aria-invalid={isDateInvalid}
+                onChange={(event) => {
+                  setDate(event.target.value);
+                  if (error) setError("");
+                }}
               />
               <Input
                 type="time"
                 value={time}
-                onChange={(event) => setTime(event.target.value)}
+                aria-invalid={isTimeInvalid}
+                onChange={(event) => {
+                  setTime(event.target.value);
+                  if (error) setError("");
+                }}
               />
             </div>
           ) : (
@@ -133,6 +157,8 @@ export function AssignmentSheet({
             </p>
           )}
         </div>
+
+        {error && <p className="text-caption text-danger">{error}</p>}
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="assignment-comment">Комментарий (по желанию)</Label>

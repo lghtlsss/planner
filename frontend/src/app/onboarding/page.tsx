@@ -31,7 +31,7 @@ export default function OnboardingPage() {
   });
 
   const [name, setName] = useState("");
-  const [groupId, setGroupId] = useState("");
+  const [groupId, setGroupId] = useState<number | null>(null);
   const [nameError, setNameError] = useState(false);
   const [groupError, setGroupError] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -57,8 +57,8 @@ export default function OnboardingPage() {
 
   const groups = groupsQuery.data ?? [];
   const effectiveName = name || me.data?.name || "";
-  const effectiveGroupId =
-    groupId || (me.data?.group_id != null ? String(me.data.group_id) : "");
+  const effectiveGroupId: number | null =
+    groupId ?? me.data?.group_id ?? null;
 
   return (
     <AppShell>
@@ -116,10 +116,12 @@ export default function OnboardingPage() {
           </Label>
           <select
             id="onboarding-group"
-            value={effectiveGroupId}
+            value={effectiveGroupId ?? ""}
             aria-invalid={groupError}
             onChange={(event) => {
-              setGroupId(event.target.value);
+              const raw = event.target.value;
+              const parsed = raw ? Number.parseInt(raw, 10) : null;
+              setGroupId(parsed != null && !Number.isNaN(parsed) ? parsed : null);
               if (groupError) setGroupError(false);
             }}
             disabled={groupsQuery.isLoading || save.isPending}
@@ -188,7 +190,9 @@ export default function OnboardingPage() {
         onClick={() => {
           const trimmedName = effectiveName.trim();
           const hasName = Boolean(trimmedName);
-          const hasGroup = Boolean(effectiveGroupId);
+          const hasGroup =
+            typeof effectiveGroupId === "number" &&
+            Number.isInteger(effectiveGroupId);
 
           if (!hasName) setNameError(true);
           if (!hasGroup) setGroupError(true);
@@ -196,7 +200,7 @@ export default function OnboardingPage() {
 
           save.mutate({
             name: trimmedName,
-            group_id: Number(effectiveGroupId),
+            group_id: effectiveGroupId,
           });
         }}
       >

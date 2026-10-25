@@ -7,6 +7,7 @@ import { AppShell } from "@/components/mobile/app-shell";
 import { AssignmentSheet } from "@/components/planner/assignment-sheet";
 import { DeadlineItem } from "@/components/planner/deadline-item";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tabs,
   TabsContent,
@@ -14,6 +15,28 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { getDeadlines, updateDeadline, type Deadline } from "@/lib/api";
+
+function AssignmentsSkeletonList() {
+  return (
+    <ul
+      className="divide-y divide-border rounded-3xl bg-card px-4 ring-1 ring-border"
+      aria-busy="true"
+    >
+      {[1, 2, 3].map((id) => (
+        <li key={id} className="flex items-start gap-3 py-2.5">
+          <Skeleton className="mt-0.5 size-4 shrink-0 rounded-sm" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Skeleton className="h-5 w-48 rounded-md" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <Skeleton className="h-7 w-16 rounded-lg" />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function AssignmentsPage() {
   const queryClient = useQueryClient();
@@ -50,20 +73,26 @@ export default function AssignmentsPage() {
         <TabsList className="grid h-11 w-full grid-cols-2 rounded-2xl bg-muted p-1">
           <TabsTrigger value="dated" className="rounded-xl text-[14px]">
             С дедлайнами{" "}
-            <span className="ml-1 rounded-full bg-brand-primary-light px-2 py-0.5 text-[12px] font-semibold text-brand-primary">
-              {datedItems.length}
-            </span>
+            {!deadlines.isPending && (
+              <span className="ml-1 rounded-full bg-brand-primary-light px-2 py-0.5 text-[12px] font-semibold text-brand-primary">
+                {datedItems.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="open" className="rounded-xl text-[14px]">
             Бессрочные{" "}
-            <span className="ml-1 rounded-full bg-brand-primary-light px-2 py-0.5 text-[12px] font-semibold text-brand-primary">
-              {openItems.length}
-            </span>
+            {!deadlines.isPending && (
+              <span className="ml-1 rounded-full bg-brand-primary-light px-2 py-0.5 text-[12px] font-semibold text-brand-primary">
+                {openItems.length}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dated" className="mt-3">
-          {datedItems.length === 0 ? (
+          {deadlines.isPending ? (
+            <AssignmentsSkeletonList />
+          ) : datedItems.length === 0 ? (
             <div className="rounded-3xl bg-card p-6 text-center ring-1 ring-border">
               <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-brand-primary-light text-brand-primary">
                 <Inbox className="size-5" />
@@ -93,7 +122,9 @@ export default function AssignmentsPage() {
         </TabsContent>
 
         <TabsContent value="open" className="mt-3">
-          {openItems.length === 0 ? (
+          {deadlines.isPending ? (
+            <AssignmentsSkeletonList />
+          ) : openItems.length === 0 ? (
             <div className="rounded-3xl bg-card p-6 text-center ring-1 ring-border">
               <p className="text-h3">Бессрочных заданий пока нет</p>
               <p className="mt-1 text-caption text-text-secondary">

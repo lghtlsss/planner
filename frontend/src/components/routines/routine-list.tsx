@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "lucide-react";
 import { deleteRoutine, getRoutines, type Routine } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatRoutineDays } from "./schemas";
 import { OpenRoutineFormButton } from "./open-routine-form-button";
 
@@ -23,6 +24,23 @@ export function RoutineList({
       await queryClient.invalidateQueries({ queryKey: ["routines"] });
     },
   });
+
+  if (routinesQuery.isPending) {
+    return (
+      <ul className="mt-3 space-y-3 text-left" aria-busy="true">
+        {[1, 2].map((id) => (
+          <li key={id} className="border-l-4 border-border pl-3">
+            <Skeleton className="h-5 w-40 rounded-md" />
+            <Skeleton className="mt-1.5 h-4 w-32 rounded-md" />
+            <div className="mt-2 flex gap-3">
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-4 w-16 rounded-md" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
 
   const routines: Routine[] = routinesQuery.data ?? [];
 

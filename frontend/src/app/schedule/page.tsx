@@ -14,6 +14,7 @@ import { AppShell } from "@/components/mobile/app-shell";
 import { ScheduleUploadSheet } from "@/components/planner/schedule-upload-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getMe, getScheduleForUser, type LessonOut } from "@/lib/api";
 import { addDays, formatWeekRange, isoDate, startOfWeek } from "@/lib/urgency";
 import { cn } from "cn";
@@ -58,6 +59,9 @@ export default function SchedulePage() {
         .sort((a, b) => a.start_time.localeCompare(b.start_time))
     : [];
 
+  const isLoading =
+    meQuery.isPending || (hasGroup && scheduleQuery.isPending);
+
   const loaded = Boolean(
     hasGroup && scheduleQuery.data && scheduleQuery.data.days.length > 0,
   );
@@ -71,7 +75,64 @@ export default function SchedulePage() {
         </Button>
       </div>
 
-      {!loaded ? (
+      {isLoading ? (
+        <div aria-busy="true">
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+            <Skeleton className="h-5 w-36 rounded-lg" />
+          </div>
+
+          <div className="mt-3 grid grid-cols-6 gap-2">
+            {days.map((day, index) => (
+              <div
+                key={isoDate(day)}
+                className={cn(
+                  "rounded-2xl py-2 text-center",
+                  index === selectedIndex
+                    ? "bg-primary text-white"
+                    : "bg-card text-text-main ring-1 ring-border",
+                )}
+              >
+                <div className="text-[11px] opacity-80">{WEEKDAYS[index]}</div>
+                <div className="text-[16px] font-semibold">{day.getDate()}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {[1, 2, 3].map((id) => (
+              <div key={id} className="flex gap-3">
+                <div className="w-12 space-y-1.5 pt-1">
+                  <Skeleton className="h-4 w-10 rounded-md" />
+                  <Skeleton className="h-4 w-10 rounded-md" />
+                </div>
+                <div className="flex-1 rounded-r-xl border-l-4 border-border bg-card px-3 py-2.5 ring-1 ring-border">
+                  <Skeleton className="h-5 w-3/4 rounded-md" />
+                  <Skeleton className="mt-2 h-4 w-1/2 rounded-md" />
+                  <Skeleton className="mt-2 h-3.5 w-20 rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : !loaded ? (
         <div className="mt-4 rounded-3xl bg-card px-5 py-8 text-center ring-1 ring-border">
           <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-brand-primary-light text-primary">
             <BookOpen />

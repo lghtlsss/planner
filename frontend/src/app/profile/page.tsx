@@ -17,6 +17,7 @@ import { OpenRoutineFormButton, RoutineList } from "@/components/routines";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getGroups, getMe, logout, updateMe } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
@@ -35,7 +36,7 @@ export default function ProfilePage() {
   const [sleepOpen, setSleepOpen] = useState(false);
 
   const [name, setName] = useState("");
-  const [groupId, setGroupId] = useState<string>("");
+  const [groupId, setGroupId] = useState<number | null>(null);
   const [sleep, setSleep] = useState({ from: "23:00", to: "07:00" });
 
   const saveUser = useMutation({
@@ -61,7 +62,7 @@ export default function ProfilePage() {
   }
 
   function openGroup() {
-    setGroupId(me.data?.group_id != null ? String(me.data.group_id) : "");
+    setGroupId(me.data?.group_id ?? null);
     setGroupOpen(true);
   }
 
@@ -92,18 +93,21 @@ export default function ProfilePage() {
         <Row
           label="Имя"
           required
+          loading={me.isPending}
           value={me.data?.name || "Не указано"}
           onEdit={openName}
         />
         <Row
           label="Группа"
           required
+          loading={me.isPending || groupsQuery.isPending}
           value={currentGroupLabel}
           onEdit={openGroup}
           icon={<Users className="size-4" />}
         />
         <Row
           label="Сон"
+          loading={me.isPending}
           value={
             me.data?.go_to_sleep_time
               ? `${me.data.go_to_sleep_time} – ${me.data.wake_up_time}`
@@ -184,8 +188,12 @@ export default function ProfilePage() {
           </Label>
           <select
             id="profile-group"
-            value={groupId}
-            onChange={(event) => setGroupId(event.target.value)}
+            value={groupId ?? ""}
+            onChange={(event) => {
+              const raw = event.target.value;
+              const parsed = raw ? Number.parseInt(raw, 10) : null;
+              setGroupId(parsed != null && !Number.isNaN(parsed) ? parsed : null);
+            }}
             disabled={groupsQuery.isLoading || saveUser.isPending}
             className="h-10 w-full rounded-[10px] border border-border-subtle bg-surface px-3 py-2 text-[15px] leading-[22px] text-text-main transition-colors outline-none focus-visible:border-brand-primary focus-visible:ring-3 focus-visible:ring-brand-primary/20 disabled:cursor-not-allowed disabled:bg-bg-page disabled:text-text-placeholder"
           >
@@ -215,12 +223,19 @@ export default function ProfilePage() {
           </Button>
           <Button
             size="lg"
-            disabled={saveUser.isPending || !groupId}
-            onClick={() =>
-              saveUser.mutate({
-                group_id: Number(groupId),
-              })
+            disabled={
+              saveUser.isPending ||
+              typeof groupId !== "number" ||
+              !Number.isInteger(groupId)
             }
+            onClick={() => {
+              if (typeof groupId !== "number" || !Number.isInteger(groupId)) {
+                return;
+              }
+              saveUser.mutate({
+                group_id: groupId,
+              });
+            }}
           >
             Сохранить
           </Button>
@@ -290,12 +305,14 @@ function Row({
   label,
   value,
   required,
+  loading,
   onEdit,
   icon,
 }: {
   label: string;
   value: string;
   required?: boolean;
+  loading?: boolean;
   onEdit: () => void;
   icon?: ReactNode;
 }) {
@@ -305,9 +322,19 @@ function Row({
         <p className="flex items-center gap-2 text-caption text-text-secondary">
           {icon} {label} {required && <span className="text-danger">*</span>}
         </p>
-        <p className="text-[16px] text-text-main">{value}</p>
+        {loading ? (
+          <Skeleton className="mt-1 h-5 w-32 rounded-md" />
+        ) : (
+          <p className="text-[16px] text-text-main">{value}</p>
+        )}
       </div>
-      <Button type="button" variant="outline" size="sm" onClick={onEdit}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={loading}
+        onClick={onEdit}
+      >
         <Pencil className="size-3.5" /> Ред.
       </Button>
     </div>

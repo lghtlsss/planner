@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarDays,
@@ -21,6 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getDeadlines,
   getEventsByDate,
@@ -61,7 +61,6 @@ interface TodayTimelineItem {
 }
 
 export default function HomePage() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [sheet, setSheet] = useState<Deadline | null | "new">(null);
 
@@ -107,17 +106,12 @@ export default function HomePage() {
     },
   });
 
-  useEffect(() => {
-    if (
-      me.isSuccess &&
-      me.data &&
-      (me.data.profile_completed === false ||
-        !me.data.name?.trim() ||
-        me.data.group_id == null)
-    ) {
-      router.replace("/onboarding");
-    }
-  }, [me.isSuccess, me.data, router]);
+  const isTimelineLoading =
+    me.isPending ||
+    events.isPending ||
+    tasks.isPending ||
+    routines.isPending ||
+    (groupId != null && schedule.isPending);
 
   const deadlinesById = new Map(
     (deadlines.data ?? []).map((item) => [item.id, item]),
@@ -203,11 +197,33 @@ export default function HomePage() {
           <h2 className="flex items-center gap-2 text-h3">
             <CalendarDays className="size-5 text-primary" /> Задачи на сегодня
           </h2>
-          <span className="text-caption text-text-secondary">
-            {timelineItems.length} событий
-          </span>
+          {isTimelineLoading ? (
+            <Skeleton className="h-4 w-16 rounded-md" />
+          ) : (
+            <span className="text-caption text-text-secondary">
+              {timelineItems.length} событий
+            </span>
+          )}
         </div>
-        {timelineItems.length === 0 ? (
+        {isTimelineLoading ? (
+          <ul className="space-y-3" aria-busy="true">
+            {[1, 2, 3].map((id) => (
+              <li key={id} className="flex gap-3">
+                <div className="w-12 space-y-1.5 pt-1">
+                  <Skeleton className="h-4 w-10 rounded-md" />
+                  <Skeleton className="h-4 w-10 rounded-md" />
+                </div>
+                <div className="min-w-0 flex-1 border-l-4 border-border px-3 py-2">
+                  <Skeleton className="h-5 w-3/4 rounded-md" />
+                  <div className="mt-2 flex items-center gap-2">
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                    <Skeleton className="h-4 w-28 rounded-md" />
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : timelineItems.length === 0 ? (
           <Empty
             title="На сегодня ничего не запланировано"
             text="Добавьте задачу на день в «Моих планах» — она появится здесь."
@@ -298,6 +314,7 @@ export default function HomePage() {
         icon={<Clock3 className="size-5 text-primary" />}
         title="Мои дедлайны"
         hint="Сверху — самые срочные"
+        loading={deadlines.isPending}
         items={[...dated].sort(
           (a, b) => +new Date(a.expire_date!) - +new Date(b.expire_date!),
         )}
@@ -310,6 +327,7 @@ export default function HomePage() {
       <DeadlineSection
         icon={<InfinityIcon className="size-5 text-primary" />}
         title="Бессрочные задания"
+        loading={deadlines.isPending}
         items={open}
         onToggle={(item) => toggleDeadlineMutation.mutate(item)}
         onEdit={setSheet}
@@ -330,6 +348,7 @@ function DeadlineSection({
   icon,
   title,
   hint,
+  loading,
   items,
   onToggle,
   onEdit,
@@ -340,6 +359,7 @@ function DeadlineSection({
   icon: ReactNode;
   title: string;
   hint?: string;
+  loading?: boolean;
   items: Deadline[];
   onToggle: (deadline: Deadline) => void;
   onEdit: (deadline: Deadline) => void;
@@ -353,7 +373,22 @@ function DeadlineSection({
         {icon} {title}
       </h2>
       {hint && <p className="text-caption text-text-secondary">{hint}</p>}
-      {items.length === 0 ? (
+      {loading ? (
+        <ul className="mt-2 divide-y divide-border" aria-busy="true">
+          {[1, 2].map((id) => (
+            <li key={id} className="flex items-start gap-3 py-2.5">
+              <Skeleton className="mt-0.5 size-4 shrink-0 rounded-sm" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Skeleton className="h-5 w-48 rounded-md" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-7 w-16 rounded-lg" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : items.length === 0 ? (
         <Empty
           title={emptyTitle}
           text={emptyText}

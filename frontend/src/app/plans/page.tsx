@@ -8,6 +8,7 @@ import { AppShell } from "@/components/mobile/app-shell";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getDeadlines,
   getEvents,
@@ -83,6 +84,13 @@ export default function PlansPage() {
       }),
     enabled: groupId != null,
   });
+
+  const isWeekLoading =
+    me.isPending ||
+    events.isPending ||
+    tasks.isPending ||
+    (showRoutines && routines.isPending) ||
+    (showPairs && groupId != null && schedule.isPending);
 
   return (
     <AppShell>
@@ -210,36 +218,44 @@ export default function PlansPage() {
                 <div className="text-h3">{day.getDate()}</div>
               </div>
               <div className="min-w-0 flex-1 space-y-1.5">
-                {slots.length === 0 && (
+                {isWeekLoading ? (
+                  <div className="space-y-1.5 py-0.5" aria-busy="true">
+                    <Skeleton className="h-6 w-full rounded-md" />
+                    {index % 2 === 0 && (
+                      <Skeleton className="h-6 w-3/4 rounded-md" />
+                    )}
+                  </div>
+                ) : slots.length === 0 ? (
                   <p className="text-caption text-text-secondary">
                     Свободный день
                   </p>
-                )}
-                {slots.map((slot) => (
-                  <div
-                    key={slot.key}
-                    className={
-                      slot.kind === "para"
-                        ? "border-l-4 border-para-bar bg-para-bg px-2.5 py-1 text-[13px]"
-                        : slot.kind === "task"
-                          ? "flex items-center justify-between gap-2 border-l-4 border-task-bar bg-task-bg px-2.5 py-1 text-[13px]"
-                          : "border-l-4 border-delo-bar bg-delo-bg px-2.5 py-1 text-[13px]"
-                    }
-                  >
-                    <div className="min-w-0 truncate">
-                      <span className="text-text-secondary">
-                        {slot.start_time}
-                        {slot.end_time ? `–${slot.end_time}` : ""}{" "}
-                      </span>
-                      <span className="font-medium text-text-main">
-                        {slot.title}
-                      </span>
+                ) : (
+                  slots.map((slot) => (
+                    <div
+                      key={slot.key}
+                      className={
+                        slot.kind === "para"
+                          ? "border-l-4 border-para-bar bg-para-bg px-2.5 py-1 text-[13px]"
+                          : slot.kind === "task"
+                            ? "flex items-center justify-between gap-2 border-l-4 border-task-bar bg-task-bg px-2.5 py-1 text-[13px]"
+                            : "border-l-4 border-delo-bar bg-delo-bg px-2.5 py-1 text-[13px]"
+                      }
+                    >
+                      <div className="min-w-0 truncate">
+                        <span className="text-text-secondary">
+                          {slot.start_time}
+                          {slot.end_time ? `–${slot.end_time}` : ""}{" "}
+                        </span>
+                        <span className="font-medium text-text-main">
+                          {slot.title}
+                        </span>
+                      </div>
+                      {slot.kind === "task" && slot.hasComment && (
+                        <MessageSquare className="size-3.5 shrink-0 text-text-secondary" />
+                      )}
                     </div>
-                    {slot.kind === "task" && slot.hasComment && (
-                      <MessageSquare className="size-3.5 shrink-0 text-text-secondary" />
-                    )}
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </Link>
           );
