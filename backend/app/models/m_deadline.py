@@ -68,7 +68,7 @@ class Deadline(Base):
         nullable=True
     )
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+        ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
 
